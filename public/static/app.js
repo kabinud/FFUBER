@@ -192,16 +192,26 @@ class FamilyRideshareApp {
     const sidebar = document.getElementById('sidebar-content')
 
     try {
+      console.log('Loading dashboard data...')
+      
       // Load user's groups and recent rides
       const [groupsResponse, ridesResponse] = await Promise.all([
         axios.get('/api/groups', { headers: { Authorization: `Bearer ${this.authToken}` } }),
         axios.get('/api/rides', { headers: { Authorization: `Bearer ${this.authToken}` } })
       ])
 
+      console.log('API responses received:', { 
+        groups: groupsResponse.data, 
+        rides: ridesResponse.data 
+      })
+
       const groups = groupsResponse.data.groups || []
       const rides = ridesResponse.data.rides?.slice(0, 5) || [] // Recent 5 rides
+      
+      console.log('Processed data:', { groups, rides, user: this.currentUser })
 
-    mainContent.innerHTML = `
+      console.log('Rendering dashboard HTML...')
+      mainContent.innerHTML = `
       <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-2xl font-bold">Dashboard</h2>
@@ -266,9 +276,10 @@ class FamilyRideshareApp {
           </div>
         </div>
       </div>
-    `
+      `
 
-    sidebar.innerHTML = `
+      console.log('Rendering sidebar HTML...')
+      sidebar.innerHTML = `
       <h3 class="text-lg font-semibold mb-4">Your Groups</h3>
       <div class="space-y-3">
         ${groups.map(group => `
@@ -302,7 +313,9 @@ class FamilyRideshareApp {
           Create First Group
         </button>
       ` : ''}
-    `
+      `
+      
+      console.log('Dashboard rendering completed successfully')
     } catch (error) {
       console.error('Dashboard loading error:', error)
       
