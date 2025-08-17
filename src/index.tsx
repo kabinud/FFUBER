@@ -32,6 +32,7 @@ app.use(jsxRenderer(({ children }) => {
       </head>
       <body class="bg-gray-50 font-sans">
         {children}
+        <script src="/static/test.js"></script>
         <script src="/static/auth.js"></script>
         <script src="/static/app.js"></script>
       </body>
@@ -611,8 +612,11 @@ app.get('/', (c) => {
             <button id="login-btn" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded mr-2" onclick="alert('Login clicked'); document.getElementById('login-modal').classList.remove('hidden')">
               Login
             </button>
-            <button id="register-btn" class="bg-green-500 hover:bg-green-700 px-4 py-2 rounded" onclick="alert('Register clicked'); document.getElementById('register-modal').classList.remove('hidden')">
+            <button id="register-btn" class="bg-green-500 hover:bg-green-700 px-4 py-2 rounded mr-2" onclick="alert('Register clicked'); document.getElementById('register-modal').classList.remove('hidden')">
               Sign Up
+            </button>
+            <button onclick="testShowDashboard()" class="bg-yellow-500 hover:bg-yellow-700 px-4 py-2 rounded text-sm">
+              Test Dashboard
             </button>
           </div>
         </div>

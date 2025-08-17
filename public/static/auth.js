@@ -21,19 +21,27 @@ async function handleLoginSubmit(event) {
     // Check if app instance exists
     console.log('App instance available:', !!window.app)
     
-    if (window.app) {
-      console.log('Setting app properties...')
-      window.app.authToken = response.data.token
-      window.app.currentUser = response.data.user
-      console.log('App user set to:', window.app.currentUser)
-      
-      console.log('Calling showApp()...')
-      window.app.showApp()
-      console.log('showApp() called successfully')
+    // Try simple test first
+    console.log('Attempting to show dashboard...')
+    if (typeof testShowDashboard === 'function') {
+      testShowDashboard()
     } else {
-      // Fallback: reload page
-      console.log('App instance not found - reloading page')
-      location.reload()
+      console.log('Test function not available, trying app instance...')
+      
+      if (window.app) {
+        console.log('Setting app properties...')
+        window.app.authToken = response.data.token
+        window.app.currentUser = response.data.user
+        console.log('App user set to:', window.app.currentUser)
+        
+        console.log('Calling showApp()...')
+        window.app.showApp()
+        console.log('showApp() called successfully')
+      } else {
+        // Fallback: reload page
+        console.log('App instance not found - reloading page')
+        location.reload()
+      }
     }
   } catch (error) {
     console.error('Login error:', error)
