@@ -1,5 +1,5 @@
-// Family Rideshare App Frontend
-class FamilyRideshareApp {
+// FamRide App Frontend
+class FamRideApp {
   constructor() {
     this.currentUser = null
     this.authToken = null
@@ -1015,7 +1015,7 @@ class FamilyRideshareApp {
 // Initialize app when page loads
 let app
 document.addEventListener('DOMContentLoaded', () => {
-  app = new FamilyRideshareApp()
+  app = new FamRideApp()
   
   // Initialize timeout manager
   app.timeoutManager = new TimeoutManager(app)

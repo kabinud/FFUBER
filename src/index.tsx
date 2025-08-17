@@ -23,7 +23,7 @@ app.use(jsxRenderer(({ children }) => {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Family Rideshare - Safe rides with people you trust</title>
+        <title>FamRide - Safe rides with people you trust</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
@@ -993,7 +993,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Family Rideshare - Safe rides with people you trust</title>
+        <title>FamRide - Safe rides with people you trust</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
@@ -1006,7 +1006,7 @@ app.get('/', (c) => {
         <div class="container mx-auto flex justify-between items-center">
           <h1 class="text-2xl font-bold">
             <i class="fas fa-users mr-2"></i>
-            Family Rideshare
+            FamRide
           </h1>
           <div id="nav-buttons">
             <button id="login-btn" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded mr-2" onclick="alert('Login clicked'); document.getElementById('login-modal').classList.remove('hidden')">

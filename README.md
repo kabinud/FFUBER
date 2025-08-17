@@ -1,4 +1,4 @@
-# Family Rideshare App
+# FamRide App
 
 ## Project Overview
 - **Name**: Family Rideshare

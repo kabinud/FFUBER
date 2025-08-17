@@ -1,5 +1,5 @@
 {
-  "name": "webapp",
+  "name": "famride",
   "type": "module",
   "scripts": {
     "dev": "vite",

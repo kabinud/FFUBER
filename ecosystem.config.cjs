@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'family-rideshare',
+      name: 'famride',
       script: 'npx',
       args: 'wrangler pages dev dist --d1=webapp-production --local --ip 0.0.0.0 --port 3000',
       env: {
