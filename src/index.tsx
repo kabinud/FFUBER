@@ -656,20 +656,20 @@ app.get('/', (c) => {
           <div class="grid md:grid-cols-3 gap-6">
             <div class="md:col-span-2">
               <div id="main-content">
-                <!-- Dynamic content will be loaded here -->
+                {/* Dynamic content will be loaded here */}
               </div>
             </div>
             
             <div class="bg-white rounded-lg shadow-lg p-6">
               <div id="sidebar-content">
-                <!-- Sidebar content -->
+                {/* Sidebar content */}
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      <!-- Login Modal -->
+      {/* Login Modal */}
       <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
           <h3 class="text-2xl font-bold mb-6">Login</h3>
@@ -690,7 +690,7 @@ app.get('/', (c) => {
         </div>
       </div>
 
-      <!-- Register Modal -->
+      {/* Register Modal */}
       <div id="register-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
           <h3 class="text-2xl font-bold mb-6">Sign Up</h3>
