@@ -5,6 +5,7 @@ class FamilyRideshareApp {
     this.authToken = null
     this.currentLocation = null
     this.watchId = null
+    this.currentView = 'dashboard'
     this.init()
   }
 
@@ -219,7 +220,7 @@ class FamilyRideshareApp {
       this.updateNavigation()
       console.log('Navigation updated')
       
-      this.loadDashboard()
+      this.showDashboard()
       console.log('Dashboard loading initiated')
     } else {
       console.error('Required DOM elements not found!')
@@ -229,11 +230,31 @@ class FamilyRideshareApp {
   updateNavigation() {
     const navButtons = document.getElementById('nav-buttons')
     navButtons.innerHTML = `
-      <span class="mr-4">Welcome, ${this.currentUser.name}</span>
-      <button onclick="app.logout()" class="bg-red-500 hover:bg-red-700 px-4 py-2 rounded">
-        Logout
-      </button>
+      <div class="flex items-center space-x-4">
+        <button onclick="app.showDashboard()" class="hover:bg-blue-700 px-3 py-2 rounded text-sm font-medium ${this.currentView === 'dashboard' ? 'bg-blue-700' : 'bg-blue-500'}">
+          <i class="fas fa-home mr-1"></i>Dashboard
+        </button>
+        <button onclick="app.showRideHistory()" class="hover:bg-blue-700 px-3 py-2 rounded text-sm font-medium ${this.currentView === 'history' ? 'bg-blue-700' : 'bg-blue-500'}">
+          <i class="fas fa-history mr-1"></i>Ride History
+        </button>
+        <span class="text-white mr-2">Welcome, ${this.currentUser.name}</span>
+        <button onclick="app.logout()" class="bg-red-500 hover:bg-red-700 px-4 py-2 rounded">
+          Logout
+        </button>
+      </div>
     `
+  }
+
+  showDashboard() {
+    this.currentView = 'dashboard'
+    this.updateNavigation()
+    this.loadDashboard()
+  }
+
+  showRideHistory() {
+    this.currentView = 'history'
+    this.updateNavigation()
+    this.loadRideHistory()
   }
 
   async loadDashboard() {
@@ -266,7 +287,7 @@ class FamilyRideshareApp {
       })
 
       const groups = groupsResponse.data.groups || []
-      const rides = ridesResponse.data.rides?.slice(0, 5) || [] // Recent 5 rides
+      const rides = ridesResponse.data.rides || [] // All current rides
       const availableRides = availableRidesResponse?.data.rides || []
       
       console.log('Processed data:', { groups, rides, availableRides, user: this.currentUser })
@@ -356,31 +377,7 @@ class FamilyRideshareApp {
               </div>
             </div>
           ` : ''}
-          
-          <div class="mb-6">
-            <h3 class="text-lg font-semibold mb-3">Ride History</h3>
-            <div class="space-y-2">
-              ${this.getHistoricalRides(rides).length > 0 ? this.getHistoricalRides(rides).map(ride => `
-                <div class="border-l-4 ${this.getRideStatusColor(ride.status)} pl-4 py-2">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <span class="font-medium">${ride.pickup_address || 'Pickup location'}</span>
-                      <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
-                      <span>${ride.destination_address || 'Destination'}</span>
-                    </div>
-                    <span class="text-sm px-2 py-1 rounded ${this.getRideStatusBadge(ride.status)}">
-                      ${ride.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <div class="text-sm text-gray-600 mt-1">
-                    ${ride.group_name} • ${this.formatRideDate(ride.requested_at)}
-                    ${ride.requester_name && ride.requester_name !== this.currentUser?.name ? ` • Requested by: ${ride.requester_name}` : ''}
-                    ${ride.driver_name ? ` • Driver: ${ride.driver_name}` : ''}
-                  </div>
-                </div>
-              `).join('') : '<p class="text-gray-500 text-center py-4">No ride history yet. Request your first ride!</p>'}
-            </div>
-          </div>
+
           
           ${this.currentUser && this.currentUser.is_driver ? `
             <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
@@ -837,6 +834,131 @@ class FamilyRideshareApp {
       console.error('Failed to cancel ride acceptance:', error)
       this.showNotification(
         error.response?.data?.error || 'Failed to cancel ride acceptance', 
+        'error'
+      )
+    }
+  }
+
+  async loadRideHistory() {
+    console.log('Loading ride history...')
+    const mainContent = document.getElementById('main-content')
+    const sidebar = document.getElementById('sidebar-content')
+    
+    try {
+      // Load ride history
+      const response = await axios.get('/api/rides/history', { 
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+      
+      const historyData = response.data
+      const rides = historyData.rides || []
+      
+      console.log('Ride history loaded:', rides.length, 'rides')
+      
+      mainContent.innerHTML = `
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-history mr-2 text-blue-600"></i>
+              Ride History
+            </h3>
+            <span class="text-sm text-gray-600">${rides.length} total rides</span>
+          </div>
+          
+          <div class="space-y-4">
+            ${rides.length > 0 ? rides.map(ride => `
+              <div class="border rounded-lg p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                      <span class="text-lg font-medium">${ride.pickup_address || 'Pickup location'}</span>
+                      <i class="fas fa-arrow-right mx-3 text-gray-400"></i>
+                      <span class="text-lg font-medium">${ride.destination_address || 'Destination'}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600 space-x-4">
+                      <span><i class="fas fa-users mr-1"></i>${ride.group_name}</span>
+                      <span><i class="fas fa-clock mr-1"></i>${this.formatRideDate(ride.requested_at)}</span>
+                      <span><i class="fas fa-user-friends mr-1"></i>${ride.passenger_count} passenger(s)</span>
+                      ${ride.requester_name !== this.currentUser?.name ? `<span><i class="fas fa-user mr-1"></i>Requested by: ${ride.requester_name}</span>` : ''}
+                      ${ride.driver_name ? `<span><i class="fas fa-car mr-1"></i>Driver: ${ride.driver_name}</span>` : ''}
+                    </div>
+                    ${ride.notes ? `<div class="mt-2 text-sm text-gray-600 italic"><i class="fas fa-sticky-note mr-1"></i>${ride.notes}</div>` : ''}
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-sm px-3 py-1 rounded ${this.getRideStatusBadge(ride.status)}">
+                      ${ride.status.replace('_', ' ')}
+                    </span>
+                    ${ride.requester_id == this.currentUser?.id ? 
+                      `<button onclick="app.duplicateRide(${ride.id})" 
+                              class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium">
+                        <i class="fas fa-copy mr-1"></i>Request Again
+                       </button>` : ''}
+                  </div>
+                </div>
+              </div>
+            `).join('') : `
+              <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-history text-4xl mb-4 opacity-50"></i>
+                <p class="text-lg">No ride history yet.</p>
+                <p class="text-sm">Your completed and cancelled rides will appear here.</p>
+              </div>
+            `}
+          </div>
+          
+          ${historyData.total > 20 ? `
+            <div class="mt-6 text-center">
+              <p class="text-sm text-gray-600">Showing ${rides.length} of ${historyData.total} rides</p>
+              <!-- Pagination can be added here in the future -->
+            </div>
+          ` : ''}
+        </div>
+      `
+      
+      // Keep sidebar empty or minimal for history page
+      sidebar.innerHTML = `
+        <div class="text-center">
+          <h4 class="text-lg font-semibold mb-4">Quick Actions</h4>
+          <button onclick="app.showDashboard()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">
+            <i class="fas fa-home mr-2"></i>Back to Dashboard
+          </button>
+          <button onclick="showRequestRideModal()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+            <i class="fas fa-plus mr-2"></i>Request New Ride
+          </button>
+        </div>
+      `
+      
+    } catch (error) {
+      console.error('Failed to load ride history:', error)
+      mainContent.innerHTML = `
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+          <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">Failed to Load Ride History</h3>
+          <p class="text-gray-600 mb-4">There was an error loading your ride history.</p>
+          <button onclick="app.loadRideHistory()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+            Try Again
+          </button>
+        </div>
+      `
+    }
+  }
+
+  async duplicateRide(rideId) {
+    if (!confirm('Do you want to create a new ride request with the same pickup and destination? This will make the request available to drivers in your group.')) {
+      return
+    }
+
+    try {
+      await axios.post(`/api/rides/${rideId}/duplicate`, {}, {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+
+      this.showNotification('Ride request created successfully! Check your dashboard to see the new request.', 'success')
+      // Optionally switch to dashboard to see the new request
+      this.showDashboard()
+    } catch (error) {
+      console.error('Failed to duplicate ride:', error)
+      this.showNotification(
+        error.response?.data?.error || 'Failed to create duplicate ride request', 
         'error'
       )
     }

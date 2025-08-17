@@ -574,6 +574,93 @@ app.get('/api/rides', authenticateUser, async (c) => {
   return c.json({ rides: ridesResult.results || [] })
 })
 
+// Get ride history (completed and cancelled rides)
+app.get('/api/rides/history', authenticateUser, async (c) => {
+  const user = c.get('user')
+  const { env } = c
+  const page = parseInt(c.req.query('page') || '1')
+  const limit = parseInt(c.req.query('limit') || '20')
+  const offset = (page - 1) * limit
+
+  try {
+    const historyQuery = `
+      SELECT r.*, u.name as requester_name, u2.name as driver_name, rg.name as group_name
+      FROM rides r
+      JOIN users u ON r.requester_id = u.id
+      LEFT JOIN users u2 ON r.driver_id = u2.id
+      JOIN ride_groups rg ON r.group_id = rg.id
+      JOIN group_members gm ON rg.id = gm.group_id
+      WHERE gm.user_id = ? AND r.status IN ('completed', 'cancelled')
+      ORDER BY r.requested_at DESC
+      LIMIT ? OFFSET ?
+    `
+    
+    const ridesResult = await env.DB.prepare(historyQuery).bind(user.user_id, limit, offset).all()
+    
+    // Get total count for pagination
+    const countResult = await env.DB.prepare(`
+      SELECT COUNT(*) as total
+      FROM rides r
+      JOIN ride_groups rg ON r.group_id = rg.id
+      JOIN group_members gm ON rg.id = gm.group_id
+      WHERE gm.user_id = ? AND r.status IN ('completed', 'cancelled')
+    `).bind(user.user_id).first()
+    
+    return c.json({ 
+      rides: ridesResult.results || [], 
+      total: countResult?.total || 0,
+      page,
+      limit
+    })
+  } catch (error) {
+    console.error('Get ride history error:', error)
+    return c.json({ error: 'Failed to get ride history' }, 500)
+  }
+})
+
+// Duplicate a historical ride request
+app.post('/api/rides/:id/duplicate', authenticateUser, async (c) => {
+  const rideId = c.req.param('id')
+  const user = c.get('user')
+  const { env } = c
+
+  try {
+    // Get the original ride
+    const originalRide = await env.DB.prepare(`
+      SELECT r.*, gm.user_id as member_check
+      FROM rides r
+      JOIN group_members gm ON r.group_id = gm.group_id
+      WHERE r.id = ? AND r.requester_id = ? AND gm.user_id = ? AND r.status IN ('completed', 'cancelled')
+    `).bind(rideId, user.user_id, user.user_id).first()
+
+    if (!originalRide) {
+      return c.json({ error: 'Original ride not found or you cannot duplicate this ride' }, 404)
+    }
+
+    // Create new ride request with same details
+    const newRide = await env.DB.prepare(`
+      INSERT INTO rides (
+        group_id, requester_id, pickup_latitude, pickup_longitude, pickup_address,
+        destination_latitude, destination_longitude, destination_address,
+        passenger_count, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING id, group_id, requester_id, pickup_latitude, pickup_longitude,
+                pickup_address, destination_latitude, destination_longitude,
+                destination_address, passenger_count, notes, status, requested_at
+    `).bind(
+      originalRide.group_id, user.user_id, 
+      originalRide.pickup_latitude, originalRide.pickup_longitude, originalRide.pickup_address,
+      originalRide.destination_latitude, originalRide.destination_longitude, originalRide.destination_address,
+      originalRide.passenger_count, originalRide.notes
+    ).first()
+
+    return c.json({ ride: newRide })
+  } catch (error) {
+    console.error('Duplicate ride error:', error)
+    return c.json({ error: 'Failed to duplicate ride request' }, 500)
+  }
+})
+
 // Find available drivers near pickup location
 app.get('/api/rides/:id/available-drivers', authenticateUser, async (c) => {
   const rideId = c.req.param('id')
