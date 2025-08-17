@@ -261,6 +261,12 @@ class FamilyRideshareApp {
       const rides = ridesResponse.data.rides?.slice(0, 5) || [] // Recent 5 rides
       
       console.log('Processed data:', { groups, rides, user: this.currentUser })
+      
+      // Debug: Log user ID and ride requester IDs
+      console.log('Current user ID:', this.currentUser?.id)
+      rides.forEach(ride => {
+        console.log(`Ride ${ride.id}: requester_id=${ride.requester_id}, status=${ride.status}, can_cancel=${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status)}`)
+      })
 
       console.log('Rendering dashboard HTML...')
       
@@ -320,7 +326,7 @@ class FamilyRideshareApp {
                       <span class="text-sm px-2 py-1 rounded ${this.getRideStatusBadge(ride.status)}">
                         ${ride.status.replace('_', ' ')}
                       </span>
-                      ${ride.requester_id == this.currentUser?.user_id && ['requested', 'accepted'].includes(ride.status) ? 
+                      ${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status) ? 
                         `<button onclick="app.cancelRide(${ride.id})" 
                                 class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
                           <i class="fas fa-times mr-1"></i>Cancel
