@@ -182,9 +182,9 @@ class FamRideApp {
       navigator.geolocation.clearWatch(this.watchId)
     }
     // Clear all ride timeouts
-    this.rideTimeouts.forEach((timeoutData, rideId) => {
-      this.clearRideTimeout(rideId)
-    })
+    if (this.timeoutManager) {
+      this.timeoutManager.cleanup()
+    }
     location.reload()
   }
 
@@ -219,14 +219,14 @@ class FamRideApp {
     const navButtons = document.getElementById('nav-buttons')
     navButtons.innerHTML = `
       <div class="flex items-center space-x-4">
-        <button onclick="app.showDashboard()" class="hover:bg-blue-700 px-3 py-2 rounded text-sm font-medium ${this.currentView === 'dashboard' ? 'bg-blue-700' : 'bg-blue-500'}">
+        <button onclick="window.app.showDashboard()" class="hover:bg-blue-700 px-3 py-2 rounded text-sm font-medium ${this.currentView === 'dashboard' ? 'bg-blue-700' : 'bg-blue-500'}">
           <i class="fas fa-home mr-1"></i>Dashboard
         </button>
-        <button onclick="app.showRideHistory()" class="hover:bg-blue-700 px-3 py-2 rounded text-sm font-medium ${this.currentView === 'history' ? 'bg-blue-700' : 'bg-blue-500'}">
+        <button onclick="window.app.showRideHistory()" class="hover:bg-blue-700 px-3 py-2 rounded text-sm font-medium ${this.currentView === 'history' ? 'bg-blue-700' : 'bg-blue-500'}">
           <i class="fas fa-history mr-1"></i>Ride History
         </button>
         <span class="text-white mr-2">Welcome, ${this.currentUser.name}</span>
-        <button onclick="app.logout()" class="bg-red-500 hover:bg-red-700 px-4 py-2 rounded">
+        <button onclick="window.app.logout()" class="bg-red-500 hover:bg-red-700 px-4 py-2 rounded">
           Logout
         </button>
       </div>
@@ -293,7 +293,7 @@ class FamRideApp {
               ${this.currentUser && this.currentUser.is_driver ? `
                 <div class="flex items-center gap-2">
                   <span class="text-sm font-medium">Driver Status:</span>
-                  <button onclick="app.toggleDriverAvailability()" 
+                  <button onclick="window.app.toggleDriverAvailability()" 
                           class="px-4 py-2 rounded-lg font-medium transition-all ${this.currentUser.is_available ? 
                             'bg-green-600 hover:bg-green-700 text-white' : 
                             'bg-gray-300 hover:bg-gray-400 text-gray-700'}">
@@ -361,12 +361,12 @@ class FamRideApp {
                           ${ride.status.replace('_', ' ')}
                         </span>
                         ${ride.requester_id == this.currentUser?.id && ride.status === 'requested' ? 
-                          `<button onclick="app.editRide(${ride.id})" 
+                          `<button onclick="window.app.editRide(${ride.id})" 
                                   class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded mr-1">
                             <i class="fas fa-edit mr-1"></i>Edit
                            </button>` : ''}
                         ${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status) ? 
-                          `<button onclick="app.cancelRide(${ride.id})" 
+                          `<button onclick="window.app.cancelRide(${ride.id})" 
                                   class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
                             <i class="fas fa-times mr-1"></i>Cancel
                            </button>` : ''}
@@ -417,12 +417,12 @@ class FamRideApp {
                         ${ride.notes ? `<div class="mt-2 text-sm text-gray-600 italic">${ride.notes}</div>` : ''}
                       </div>
                       ${ride.status === 'requested' ? 
-                        `<button onclick="app.acceptRideRequest(${ride.id})" 
+                        `<button onclick="window.app.acceptRideRequest(${ride.id})" 
                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                           <i class="fas fa-check mr-1"></i>Accept
                          </button>` : 
                       ride.status === 'accepted' && ride.driver_id == this.currentUser?.id ?
-                        `<button onclick="app.deacceptRide(${ride.id})" 
+                        `<button onclick="window.app.deacceptRide(${ride.id})" 
                                 class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium">
                           <i class="fas fa-undo mr-1"></i>Cancel Acceptance
                          </button>` : 
@@ -511,7 +511,7 @@ class FamRideApp {
       sidebar.innerHTML = `
         <div class="text-center p-4">
           <p class="text-gray-500">Unable to load groups</p>
-          <button onclick="app.loadDashboard()" class="mt-2 text-blue-600 hover:underline text-sm">
+          <button onclick="window.app.loadDashboard()" class="mt-2 text-blue-600 hover:underline text-sm">
             Try Again
           </button>
         </div>
@@ -891,7 +891,7 @@ class FamRideApp {
                       ${ride.status.replace('_', ' ')}
                     </span>
                     ${ride.requester_id == this.currentUser?.id ? 
-                      `<button onclick="app.duplicateRide(${ride.id})" 
+                      `<button onclick="window.app.duplicateRide(${ride.id})" 
                               class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium">
                         <i class="fas fa-copy mr-1"></i>Request Again
                        </button>` : ''}
@@ -920,7 +920,7 @@ class FamRideApp {
       sidebar.innerHTML = `
         <div class="text-center">
           <h4 class="text-lg font-semibold mb-4">Quick Actions</h4>
-          <button onclick="app.showDashboard()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">
+          <button onclick="window.app.showDashboard()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">
             <i class="fas fa-home mr-2"></i>Back to Dashboard
           </button>
           ${this.currentUser && this.currentUser.is_driver && this.currentUser.is_available ? 
@@ -942,7 +942,7 @@ class FamRideApp {
           <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
           <h3 class="text-xl font-semibold text-gray-800 mb-2">Failed to Load Ride History</h3>
           <p class="text-gray-600 mb-4">There was an error loading your ride history.</p>
-          <button onclick="app.loadRideHistory()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+          <button onclick="window.app.loadRideHistory()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
             Try Again
           </button>
         </div>
