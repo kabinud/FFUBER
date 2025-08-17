@@ -9,10 +9,17 @@ class FamilyRideshareApp {
   }
 
   init() {
+    console.log('App initializing...')
+    
     // Check for existing session
     this.authToken = localStorage.getItem('authToken')
+    console.log('Found token:', this.authToken ? 'Yes' : 'No')
+    
     if (this.authToken) {
+      console.log('Loading user profile...')
       this.loadUserProfile()
+    } else {
+      console.log('No token found, showing landing page')
     }
 
     this.setupEventListeners()
@@ -136,14 +143,18 @@ class FamilyRideshareApp {
 
   async loadUserProfile() {
     try {
+      console.log('Making profile API call...')
       const response = await axios.get('/api/user/profile', {
         headers: { Authorization: `Bearer ${this.authToken}` }
       })
+      console.log('Profile loaded:', response.data.user)
       this.currentUser = response.data.user
       this.showApp()
     } catch (error) {
+      console.error('Profile loading failed:', error)
       localStorage.removeItem('authToken')
       this.authToken = null
+      this.showNotification('Session expired. Please log in again.', 'error')
     }
   }
 
@@ -159,6 +170,7 @@ class FamilyRideshareApp {
 
   // UI Management
   showApp() {
+    console.log('Showing app for user:', this.currentUser?.name)
     document.getElementById('landing-page').classList.add('hidden')
     document.getElementById('app-content').classList.remove('hidden')
     this.updateNavigation()
@@ -179,14 +191,15 @@ class FamilyRideshareApp {
     const mainContent = document.getElementById('main-content')
     const sidebar = document.getElementById('sidebar-content')
 
-    // Load user's groups and recent rides
-    const [groupsResponse, ridesResponse] = await Promise.all([
-      axios.get('/api/groups', { headers: { Authorization: `Bearer ${this.authToken}` } }),
-      axios.get('/api/rides', { headers: { Authorization: `Bearer ${this.authToken}` } })
-    ])
+    try {
+      // Load user's groups and recent rides
+      const [groupsResponse, ridesResponse] = await Promise.all([
+        axios.get('/api/groups', { headers: { Authorization: `Bearer ${this.authToken}` } }),
+        axios.get('/api/rides', { headers: { Authorization: `Bearer ${this.authToken}` } })
+      ])
 
-    const groups = groupsResponse.data.groups
-    const rides = ridesResponse.data.rides.slice(0, 5) // Recent 5 rides
+      const groups = groupsResponse.data.groups || []
+      const rides = ridesResponse.data.rides?.slice(0, 5) || [] // Recent 5 rides
 
     mainContent.innerHTML = `
       <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -290,6 +303,38 @@ class FamilyRideshareApp {
         </button>
       ` : ''}
     `
+    } catch (error) {
+      console.error('Dashboard loading error:', error)
+      
+      // If authentication failed, logout and reload
+      if (error.response?.status === 401) {
+        this.logout()
+        return
+      }
+      
+      // Otherwise show error message in dashboard
+      mainContent.innerHTML = `
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-red-500 text-3xl mb-4"></i>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Dashboard Loading Error</h2>
+            <p class="text-gray-600 mb-4">There was an issue loading your dashboard. Please try refreshing the page.</p>
+            <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      `
+      
+      sidebar.innerHTML = `
+        <div class="text-center p-4">
+          <p class="text-gray-500">Unable to load groups</p>
+          <button onclick="app.loadDashboard()" class="mt-2 text-blue-600 hover:underline text-sm">
+            Try Again
+          </button>
+        </div>
+      `
+    }
   }
 
   getRideStatusColor(status) {
