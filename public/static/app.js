@@ -201,11 +201,29 @@ class FamilyRideshareApp {
 
   // UI Management
   showApp() {
-    console.log('Showing app for user:', this.currentUser?.name)
-    document.getElementById('landing-page').classList.add('hidden')
-    document.getElementById('app-content').classList.remove('hidden')
-    this.updateNavigation()
-    this.loadDashboard()
+    console.log('showApp() called')
+    console.log('Current user:', this.currentUser)
+    console.log('Auth token:', this.authToken ? 'Present' : 'Missing')
+    
+    const landingPage = document.getElementById('landing-page')
+    const appContent = document.getElementById('app-content')
+    
+    console.log('Landing page element:', landingPage)
+    console.log('App content element:', appContent)
+    
+    if (landingPage && appContent) {
+      landingPage.classList.add('hidden')
+      appContent.classList.remove('hidden')
+      console.log('Page sections toggled successfully')
+      
+      this.updateNavigation()
+      console.log('Navigation updated')
+      
+      this.loadDashboard()
+      console.log('Dashboard loading initiated')
+    } else {
+      console.error('Required DOM elements not found!')
+    }
   }
 
   updateNavigation() {

@@ -4,28 +4,40 @@ async function handleLoginSubmit(event) {
   const formData = new FormData(event.target)
   const email = formData.get('email')
   
+  console.log('Login attempt for:', email)
+  
   try {
     const response = await axios.post('/api/auth/login', { email })
+    console.log('Login API response:', response.data)
     
     // Store token and user data
     localStorage.setItem('authToken', response.data.token)
+    console.log('Token stored in localStorage')
     
     // Close modal
     document.getElementById('login-modal').classList.add('hidden')
     document.getElementById('login-form').reset()
     
-    // If app instance exists, use it directly
+    // Check if app instance exists
+    console.log('App instance available:', !!window.app)
+    
     if (window.app) {
+      console.log('Setting app properties...')
       window.app.authToken = response.data.token
       window.app.currentUser = response.data.user
+      console.log('App user set to:', window.app.currentUser)
+      
+      console.log('Calling showApp()...')
       window.app.showApp()
-      console.log('Login successful - showing app directly')
+      console.log('showApp() called successfully')
     } else {
       // Fallback: reload page
       console.log('App instance not found - reloading page')
       location.reload()
     }
   } catch (error) {
+    console.error('Login error:', error)
+    console.error('Error response:', error.response?.data)
     alert('Login failed: ' + (error.response?.data?.error || 'Unknown error'))
   }
   return false
