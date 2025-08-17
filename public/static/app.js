@@ -259,15 +259,26 @@ class FamilyRideshareApp {
       <h3 class="text-lg font-semibold mb-4">Your Groups</h3>
       <div class="space-y-3">
         ${groups.map(group => `
-          <div class="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer" onclick="app.viewGroup(${group.id})">
-            <div class="flex justify-between items-start">
+          <div class="border rounded-lg p-3 hover:bg-gray-50">
+            <div class="flex justify-between items-start mb-2">
               <div>
                 <h4 class="font-medium">${group.name}</h4>
                 <p class="text-sm text-gray-600">${group.member_count} members</p>
               </div>
               ${group.is_admin ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Admin</span>' : ''}
             </div>
-            ${group.description ? `<p class="text-sm text-gray-500 mt-2">${group.description}</p>` : ''}
+            ${group.description ? `<p class="text-sm text-gray-500 mb-2">${group.description}</p>` : ''}
+            
+            <div class="flex gap-2 mt-2">
+              <button onclick="app.viewGroup(${group.id})" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">
+                <i class="fas fa-users mr-1"></i>View Members
+              </button>
+              ${group.is_admin ? `
+                <button onclick="app.showInviteCode('${group.invite_code}', '${group.name}')" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded">
+                  <i class="fas fa-share-alt mr-1"></i>Invite Code
+                </button>
+              ` : ''}
+            </div>
           </div>
         `).join('')}
       </div>
@@ -452,6 +463,44 @@ class FamilyRideshareApp {
     }
   }
 
+  showGroupCreatedModal(group) {
+    const modal = document.createElement('div')
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+    modal.innerHTML = `
+      <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
+        <div class="text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+            <i class="fas fa-check text-green-600 text-xl"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-2">Group Created Successfully!</h3>
+          <p class="text-gray-600 mb-6">Share this invite code with your family and friends:</p>
+          
+          <div class="mb-6">
+            <div class="invite-code text-2xl font-bold text-blue-600 mb-2">${group.invite_code}</div>
+            <p class="text-sm text-gray-500">Group: ${group.name}</p>
+          </div>
+          
+          <div class="flex gap-3">
+            <button onclick="navigator.clipboard.writeText('${group.invite_code}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy Code', 2000)" 
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm">
+              Copy Code
+            </button>
+            <button onclick="navigator.clipboard.writeText('Join our family rideshare group with code: ${group.invite_code}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy Message', 2000)" 
+                    class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm">
+              Copy Message
+            </button>
+          </div>
+          
+          <button onclick="this.closest('.fixed').remove()" 
+                  class="w-full mt-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md">
+            Done
+          </button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(modal)
+  }
+
   showCreateGroupModal() {
     const modal = document.createElement('div')
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
@@ -498,8 +547,8 @@ class FamilyRideshareApp {
         })
 
         modal.remove()
+        this.showGroupCreatedModal(response.data.group)
         this.loadDashboard()
-        this.showNotification(`Group "${response.data.group.name}" created! Invite code: ${response.data.group.invite_code}`, 'success')
       } catch (error) {
         this.showNotification(error.response?.data?.error || 'Failed to create group', 'error')
       }
@@ -556,6 +605,93 @@ class FamilyRideshareApp {
         this.showNotification(error.response?.data?.error || 'Failed to join group', 'error')
       }
     })
+  }
+
+  showInviteCode(inviteCode, groupName) {
+    const modal = document.createElement('div')
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+    modal.innerHTML = `
+      <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
+        <div class="text-center">
+          <h3 class="text-2xl font-bold text-gray-900 mb-2">Invite Friends & Family</h3>
+          <p class="text-gray-600 mb-6">Share this code to invite people to "${groupName}":</p>
+          
+          <div class="mb-6">
+            <div class="invite-code text-3xl font-bold text-blue-600 mb-3">${inviteCode}</div>
+            <p class="text-sm text-gray-500">This code never expires and can be shared multiple times</p>
+          </div>
+          
+          <div class="space-y-3 mb-4">
+            <button onclick="navigator.clipboard.writeText('${inviteCode}'); this.innerHTML='<i class=\\'fas fa-check\\'></i> Copied!'; setTimeout(() => this.innerHTML='<i class=\\'fas fa-copy\\'></i> Copy Invite Code', 2000)" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-md">
+              <i class="fas fa-copy"></i> Copy Invite Code
+            </button>
+            
+            <button onclick="navigator.clipboard.writeText('Join our family rideshare group \\"${groupName}\\" using code: ${inviteCode}\\n\\nDownload the app at: ${window.location.origin}'); this.innerHTML='<i class=\\'fas fa-check\\'></i> Copied!'; setTimeout(() => this.innerHTML='<i class=\\'fas fa-share\\'></i> Copy Full Invitation', 2000)" 
+                    class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md">
+              <i class="fas fa-share"></i> Copy Full Invitation
+            </button>
+          </div>
+          
+          <button onclick="this.closest('.fixed').remove()" 
+                  class="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md">
+            Close
+          </button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(modal)
+  }
+
+  async viewGroup(groupId) {
+    try {
+      const response = await axios.get(`/api/groups/${groupId}/members`, {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+      
+      const members = response.data.members
+      
+      const modal = document.createElement('div')
+      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+      modal.innerHTML = `
+        <div class="bg-white p-6 rounded-lg max-w-lg w-full mx-4 max-h-screen overflow-y-auto">
+          <h3 class="text-xl font-bold mb-4">Group Members</h3>
+          
+          <div class="space-y-3 mb-6">
+            ${members.map(member => `
+              <div class="flex items-center justify-between p-3 border rounded-lg">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-blue-600"></i>
+                  </div>
+                  <div>
+                    <p class="font-medium">${member.name}</p>
+                    <p class="text-sm text-gray-600">${member.email}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${member.is_admin ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Admin</span>' : ''}
+                  ${member.is_driver ? `
+                    <span class="text-xs px-2 py-1 rounded ${member.is_available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">
+                      ${member.is_available ? 'Available' : 'Driver'}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          
+          <button onclick="this.closest('.fixed').remove()" 
+                  class="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md">
+            Close
+          </button>
+        </div>
+      `
+      document.body.appendChild(modal)
+      
+    } catch (error) {
+      this.showNotification('Failed to load group members', 'error')
+    }
   }
 
   // Notification system
