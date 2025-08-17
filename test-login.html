@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Testing Login</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testLogin() {
+            console.log('Starting login test...')
+            try {
+                // Test login
+                const response = await axios.post('http://localhost:3000/api/auth/login', {
+                    email: 'test@example.com'
+                })
+                console.log('Login response:', response.data)
+                
+                const token = response.data.token
+                
+                // Test groups API
+                const groupsResponse = await axios.get('http://localhost:3000/api/groups', {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                console.log('Groups response:', groupsResponse.data)
+                
+                // Test rides API
+                const ridesResponse = await axios.get('http://localhost:3000/api/rides', {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                console.log('Rides response:', ridesResponse.data)
+                
+                document.getElementById('result').innerHTML = 'All APIs working!'
+            } catch (error) {
+                console.error('Error:', error)
+                document.getElementById('result').innerHTML = 'Error: ' + error.message
+            }
+        }
+        
+        // Run test when page loads
+        testLogin()
+    </script>
+</body>
+</html>

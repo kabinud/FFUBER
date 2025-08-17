@@ -348,6 +348,96 @@ app.get('/api/groups/:id/members', authenticateUser, async (c) => {
   return c.json({ members: membersResult.results || [] })
 })
 
+// Delete group (admin only)
+app.delete('/api/groups/:id', authenticateUser, async (c) => {
+  const groupId = c.req.param('id')
+  const user = c.get('user')
+  const { env } = c
+
+  try {
+    // Verify user is admin of this group
+    const adminCheck = await env.DB.prepare(`
+      SELECT id FROM group_members 
+      WHERE group_id = ? AND user_id = ? AND is_admin = 1
+    `).bind(groupId, user.user_id).first()
+
+    if (!adminCheck) {
+      return c.json({ error: 'Only group admins can delete groups' }, 403)
+    }
+
+    // Delete all group members first
+    await env.DB.prepare(`
+      DELETE FROM group_members WHERE group_id = ?
+    `).bind(groupId).run()
+
+    // Delete all rides associated with this group
+    await env.DB.prepare(`
+      DELETE FROM rides WHERE group_id = ?
+    `).bind(groupId).run()
+
+    // Delete the group
+    await env.DB.prepare(`
+      DELETE FROM ride_groups WHERE id = ?
+    `).bind(groupId).run()
+
+    return c.json({ success: true })
+  } catch (error) {
+    return c.json({ error: 'Failed to delete group' }, 500)
+  }
+})
+
+// Transfer admin rights (admin only)
+app.put('/api/groups/:id/transfer-admin', authenticateUser, async (c) => {
+  const groupId = c.req.param('id')
+  const user = c.get('user')
+  const { env } = c
+  const { new_admin_id } = await c.req.json()
+
+  if (!new_admin_id) {
+    return c.json({ error: 'New admin user ID is required' }, 400)
+  }
+
+  try {
+    // Verify current user is admin of this group
+    const adminCheck = await env.DB.prepare(`
+      SELECT id FROM group_members 
+      WHERE group_id = ? AND user_id = ? AND is_admin = 1
+    `).bind(groupId, user.user_id).first()
+
+    if (!adminCheck) {
+      return c.json({ error: 'Only group admins can transfer admin rights' }, 403)
+    }
+
+    // Verify new admin is a member of this group
+    const newAdminCheck = await env.DB.prepare(`
+      SELECT id FROM group_members 
+      WHERE group_id = ? AND user_id = ?
+    `).bind(groupId, new_admin_id).first()
+
+    if (!newAdminCheck) {
+      return c.json({ error: 'New admin must be a member of this group' }, 400)
+    }
+
+    // Remove admin rights from current admin
+    await env.DB.prepare(`
+      UPDATE group_members 
+      SET is_admin = 0 
+      WHERE group_id = ? AND user_id = ?
+    `).bind(groupId, user.user_id).run()
+
+    // Grant admin rights to new admin
+    await env.DB.prepare(`
+      UPDATE group_members 
+      SET is_admin = 1 
+      WHERE group_id = ? AND user_id = ?
+    `).bind(groupId, new_admin_id).run()
+
+    return c.json({ success: true })
+  } catch (error) {
+    return c.json({ error: 'Failed to transfer admin rights' }, 500)
+  }
+})
+
 // Ride requests and management
 app.post('/api/rides', authenticateUser, async (c) => {
   const user = c.get('user')
@@ -576,11 +666,22 @@ app.put('/api/rides/:id/status', authenticateUser, async (c) => {
   try {
     // Verify user is either driver or requester
     const ride = await env.DB.prepare(`
-      SELECT requester_id, driver_id FROM rides WHERE id = ?
+      SELECT requester_id, driver_id, status as current_status FROM rides WHERE id = ?
     `).bind(rideId).first()
 
     if (!ride || (ride.requester_id !== user.user_id && ride.driver_id !== user.user_id)) {
       return c.json({ error: 'Not authorized to update this ride' }, 403)
+    }
+
+    // Special rules for cancellation
+    if (status === 'cancelled') {
+      // Only requester can cancel, and only if ride is still 'requested' or 'accepted'
+      if (ride.requester_id !== user.user_id) {
+        return c.json({ error: 'Only the ride requester can cancel a ride' }, 403)
+      }
+      if (!['requested', 'accepted'].includes(ride.current_status)) {
+        return c.json({ error: 'Cannot cancel ride that is already picked up or completed' }, 400)
+      }
     }
 
     let updateField = ''
@@ -601,7 +702,20 @@ app.put('/api/rides/:id/status', authenticateUser, async (c) => {
 
 // Main page
 app.get('/', (c) => {
-  return c.render(
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Family Rideshare - Safe rides with people you trust</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+        <link href="/static/style.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50 font-sans">
     <div>
       <nav class="bg-blue-600 text-white p-4">
         <div class="container mx-auto flex justify-between items-center">
@@ -727,7 +841,15 @@ app.get('/', (c) => {
         </div>
       </div>
     </div>
-  )
+    
+    <script src="/static/test.js"></script>
+    <script src="/static/features.js"></script>
+    <script src="/static/auth.js"></script>
+    <script src="/static/app.js"></script>
+    <script src="/static/debug.js"></script>
+    </body>
+    </html>
+  `)
 })
 
 export default app
