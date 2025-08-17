@@ -19,10 +19,13 @@
 ### ✅ Completed Features
 - **User Authentication**: Email-based registration and login
 - **Private Groups**: Create and join family/friend rideshare groups with invite codes
+- **Admin Features**: Group deletion and admin transfer capabilities
 - **Driver Management**: Toggle driver status and availability
-- **Ride Requests**: Request rides with pickup/destination locations
+- **Address-Based Requests**: Request rides using real addresses with geocoding
+- **Ride Cancellation**: Cancel ride requests before pickup
 - **Smart Matching**: Find closest available drivers in your group
 - **Real-time Location**: Location tracking for better matching
+- **Ride Organization**: Separate current rides from history with requester info
 - **Ride Status Tracking**: Track ride progress from request to completion
 - **Responsive UI**: Mobile-friendly interface with TailwindCSS
 
@@ -76,10 +79,12 @@ ride_offers (id, ride_id, driver_id, estimated_arrival_minutes)
 
 ### For Ride Requesters
 1. Click "Request Ride" on dashboard
-2. Select your group and enter pickup/destination
-3. Add passenger count and any special notes
-4. Wait for drivers in your group to respond
-5. Accept an offer and track your ride
+2. Select your group and enter pickup/destination addresses
+3. Use "Current Location" button to auto-populate your address
+4. Add passenger count and any special notes
+5. Wait for drivers in your group to respond
+6. Accept an offer and track your ride
+7. **Cancel ride** anytime before pickup if plans change
 
 ### For Drivers
 1. Toggle "I can drive others" in dashboard
@@ -91,7 +96,7 @@ ride_offers (id, ride_id, driver_id, estimated_arrival_minutes)
 ### Group Management
 - **Create Group**: Generate unique 8-character invite code
 - **Invite Members**: Share invite code with family/friends
-- **Admin Controls**: Group creators have admin privileges
+- **Admin Controls**: Delete groups or transfer admin rights to other members
 - **Multiple Groups**: Join multiple family/friend circles
 
 ## 🚀 Deployment
@@ -155,6 +160,9 @@ npx wrangler pages domain add yourdomain.com --project-name family-rideshare
 - `GET /api/rides/:id/available-drivers` - Find drivers
 - `POST /api/rides/:id/offer` - Offer ride
 - `POST /api/rides/:id/accept-offer/:offerId` - Accept offer
+- `PUT /api/rides/:id/status` - Update ride status (including cancellation)
+- `DELETE /api/groups/:id` - Delete group (admin only)
+- `PUT /api/groups/:id/transfer-admin` - Transfer admin rights
 
 ### Distance Calculation Algorithm
 ```javascript
