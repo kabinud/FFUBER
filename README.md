@@ -33,6 +33,8 @@
 - **Navigation Menu**: Clean navigation between Dashboard and Ride History pages
 - **Ride History Page**: Dedicated page for browsing completed and cancelled rides  
 - **Duplicate Requests**: One-click recreation of previous ride requests
+- **Uber Fallback**: Automatic Uber integration when no family/friends are available
+- **Smart Timeout**: 5-minute monitoring with multiple options for unaccepted rides
 - **Ride Status Tracking**: Track ride progress from request to completion
 - **Responsive UI**: Mobile-friendly interface with TailwindCSS
 
@@ -52,6 +54,7 @@
 - **Advanced route optimization**
 - **Driver ratings and reviews**
 - **Ride scheduling** (for future rides)
+- **Lyft integration** (currently only Uber fallback)
 
 ## 🏗️ Data Architecture
 
@@ -98,6 +101,7 @@ ride_offers (id, ride_id, driver_id, estimated_arrival_minutes)
 8. **Cancel ride** anytime before pickup if plans change
 9. **Browse History**: Use "Ride History" menu to view past rides
 10. **Request Again**: Click "Request Again" on any historical ride to duplicate it
+11. **Uber Fallback**: After 5 minutes with no response, get option to try Uber instead
 
 ### For Drivers
 1. Toggle "I can drive others" in dashboard
