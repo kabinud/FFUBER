@@ -27,10 +27,27 @@ class FamilyRideshareApp {
   }
 
   setupEventListeners() {
+    console.log('Setting up event listeners...')
+    
     // Navigation buttons
-    document.getElementById('login-btn')?.addEventListener('click', () => this.showLoginModal())
-    document.getElementById('register-btn')?.addEventListener('click', () => this.showRegisterModal())
-    document.getElementById('get-started-btn')?.addEventListener('click', () => this.showRegisterModal())
+    const loginBtn = document.getElementById('login-btn')
+    const registerBtn = document.getElementById('register-btn')
+    const getStartedBtn = document.getElementById('get-started-btn')
+    
+    console.log('Found elements:', { loginBtn, registerBtn, getStartedBtn })
+    
+    loginBtn?.addEventListener('click', () => {
+      console.log('Login button clicked')
+      this.showLoginModal()
+    })
+    registerBtn?.addEventListener('click', () => {
+      console.log('Register button clicked')
+      this.showRegisterModal()
+    })
+    getStartedBtn?.addEventListener('click', () => {
+      console.log('Get started button clicked')
+      this.showRegisterModal()
+    })
 
     // Modal handlers
     document.getElementById('cancel-login')?.addEventListener('click', () => this.hideLoginModal())
@@ -84,7 +101,14 @@ class FamilyRideshareApp {
 
   // Authentication
   showLoginModal() {
-    document.getElementById('login-modal').classList.remove('hidden')
+    console.log('showLoginModal called')
+    const modal = document.getElementById('login-modal')
+    console.log('Login modal element:', modal)
+    if (modal) {
+      modal.classList.remove('hidden')
+    } else {
+      console.error('Login modal not found!')
+    }
   }
 
   hideLoginModal() {
@@ -93,7 +117,14 @@ class FamilyRideshareApp {
   }
 
   showRegisterModal() {
-    document.getElementById('register-modal').classList.remove('hidden')
+    console.log('showRegisterModal called')
+    const modal = document.getElementById('register-modal')
+    console.log('Register modal element:', modal)
+    if (modal) {
+      modal.classList.remove('hidden')
+    } else {
+      console.error('Register modal not found!')
+    }
   }
 
   hideRegisterModal() {
