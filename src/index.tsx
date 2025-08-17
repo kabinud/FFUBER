@@ -304,7 +304,7 @@ app.get('/api/groups', authenticateUser, async (c) => {
   const user = c.get('user')
   const { env } = c
 
-  const groups = await env.DB.prepare(`
+  const groupsResult = await env.DB.prepare(`
     SELECT rg.id, rg.name, rg.description, rg.invite_code, 
            gm.is_admin, rg.created_at,
            COUNT(gm2.user_id) as member_count
@@ -315,7 +315,7 @@ app.get('/api/groups', authenticateUser, async (c) => {
     GROUP BY rg.id, rg.name, rg.description, rg.invite_code, gm.is_admin, rg.created_at
   `).bind(user.user_id).all()
 
-  return c.json({ groups })
+  return c.json({ groups: groupsResult.results || [] })
 })
 
 app.get('/api/groups/:id/members', authenticateUser, async (c) => {
@@ -332,7 +332,7 @@ app.get('/api/groups/:id/members', authenticateUser, async (c) => {
     return c.json({ error: 'Not authorized to view this group' }, 403)
   }
 
-  const members = await env.DB.prepare(`
+  const membersResult = await env.DB.prepare(`
     SELECT u.id, u.name, u.email, u.is_driver, u.is_available, 
            gm.is_admin, gm.joined_at,
            u.last_latitude, u.last_longitude, u.last_location_update
@@ -342,7 +342,7 @@ app.get('/api/groups/:id/members', authenticateUser, async (c) => {
     ORDER BY gm.is_admin DESC, u.name
   `).bind(groupId).all()
 
-  return c.json({ members })
+  return c.json({ members: membersResult.results || [] })
 })
 
 // Ride requests and management
@@ -421,8 +421,8 @@ app.get('/api/rides', authenticateUser, async (c) => {
   
   query += ' ORDER BY r.requested_at DESC'
 
-  const rides = await env.DB.prepare(query).bind(...params).all()
-  return c.json({ rides })
+  const ridesResult = await env.DB.prepare(query).bind(...params).all()
+  return c.json({ rides: ridesResult.results || [] })
 })
 
 // Find available drivers near pickup location
@@ -445,7 +445,7 @@ app.get('/api/rides/:id/available-drivers', authenticateUser, async (c) => {
     }
 
     // Get available drivers in the same group with location data
-    const drivers = await env.DB.prepare(`
+    const driversResult = await env.DB.prepare(`
       SELECT u.id, u.name, u.email, u.phone, u.last_latitude, u.last_longitude,
              u.last_location_update
       FROM users u
@@ -455,6 +455,8 @@ app.get('/api/rides/:id/available-drivers', authenticateUser, async (c) => {
         AND u.id != ?
       ORDER BY u.last_location_update DESC
     `).bind(ride.group_id, ride.requester_id).all()
+    
+    const drivers = driversResult.results || []
 
     // Calculate distances and sort by proximity
     const driversWithDistance = drivers.map(driver => ({
