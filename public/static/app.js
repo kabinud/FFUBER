@@ -326,6 +326,11 @@ class FamilyRideshareApp {
                       <span class="text-sm px-2 py-1 rounded ${this.getRideStatusBadge(ride.status)}">
                         ${ride.status.replace('_', ' ')}
                       </span>
+                      ${ride.requester_id == this.currentUser?.id && ride.status === 'requested' ? 
+                        `<button onclick="app.editRide(${ride.id})" 
+                                class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded mr-1">
+                          <i class="fas fa-edit mr-1"></i>Edit
+                         </button>` : ''}
                       ${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status) ? 
                         `<button onclick="app.cancelRide(${ride.id})" 
                                 class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
@@ -542,6 +547,186 @@ class FamilyRideshareApp {
       console.error('Failed to cancel ride:', error)
       this.showNotification(
         error.response?.data?.error || 'Failed to cancel ride request', 
+        'error'
+      )
+    }
+  }
+
+  async editRide(rideId) {
+    try {
+      // Get current ride data
+      const ridesResponse = await axios.get('/api/rides', {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+      const ride = ridesResponse.data.rides.find(r => r.id === rideId)
+      
+      if (!ride) {
+        this.showNotification('Ride not found', 'error')
+        return
+      }
+
+      if (ride.status !== 'requested') {
+        this.showNotification('Can only edit rides that are still pending', 'error')
+        return
+      }
+
+      // Get user's groups
+      const groupsResponse = await axios.get('/api/groups', {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+      const groups = groupsResponse.data.groups || []
+
+      // Create edit modal
+      this.showEditRideModal(ride, groups)
+    } catch (error) {
+      console.error('Failed to load ride for editing:', error)
+      this.showNotification('Failed to load ride data', 'error')
+    }
+  }
+
+  showEditRideModal(ride, groups) {
+    const modal = document.createElement('div')
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+    modal.innerHTML = `
+      <div class="bg-white p-6 rounded-lg max-w-lg w-full mx-4 max-h-screen overflow-y-auto">
+        <h3 class="text-2xl font-bold mb-6">Edit Ride Request</h3>
+        <form id="edit-ride-form">
+          
+          <!-- Group Selection (disabled for existing ride) -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Group</label>
+            <input type="text" value="${ride.group_name}" disabled 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+            <input type="hidden" name="group_id" value="${ride.group_id}">
+          </div>
+          
+          <!-- Pickup Location -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Pickup Location</label>
+            <div class="relative">
+              <input type="text" name="pickup_address" required placeholder="Enter pickup address..." 
+                     value="${ride.pickup_address || ''}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2" 
+                     oninput="handleAddressAutocomplete(this, 'edit_pickup')"
+                     onchange="geocodeAddressForEdit(this, 'pickup')"
+                     autocomplete="off" />
+              <div id="edit_pickup_suggestions" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden max-h-48 overflow-y-auto"></div>
+            </div>
+            <input type="hidden" name="pickup_latitude" value="${ride.pickup_latitude || ''}" />
+            <input type="hidden" name="pickup_longitude" value="${ride.pickup_longitude || ''}" />
+            <button type="button" onclick="getCurrentLocationAddressForEdit('pickup')" 
+                    class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded">
+              <i class="fas fa-location-arrow mr-1"></i>Use Current Location
+            </button>
+          </div>
+          
+          <!-- Destination -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Destination</label>
+            <div class="relative">
+              <input type="text" name="destination_address" required placeholder="Enter destination address..." 
+                     value="${ride.destination_address || ''}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+                     oninput="handleAddressAutocomplete(this, 'edit_destination')"
+                     onchange="geocodeAddressForEdit(this, 'destination')"
+                     autocomplete="off" />
+              <div id="edit_destination_suggestions" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden max-h-48 overflow-y-auto"></div>
+            </div>
+            <input type="hidden" name="destination_latitude" value="${ride.destination_latitude || ''}" />
+            <input type="hidden" name="destination_longitude" value="${ride.destination_longitude || ''}" />
+          </div>
+          
+          <!-- Passenger Count -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Number of Passengers</label>
+            <select name="passenger_count" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+              <option value="1" ${ride.passenger_count == 1 ? 'selected' : ''}>1 person</option>
+              <option value="2" ${ride.passenger_count == 2 ? 'selected' : ''}>2 people</option>
+              <option value="3" ${ride.passenger_count == 3 ? 'selected' : ''}>3 people</option>
+              <option value="4" ${ride.passenger_count == 4 ? 'selected' : ''}>4 people</option>
+              <option value="5" ${ride.passenger_count == 5 ? 'selected' : ''}>5+ people</option>
+            </select>
+          </div>
+          
+          <!-- Notes -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium mb-2">Special Notes (optional)</label>
+            <textarea name="notes" rows="3" placeholder="Any special instructions..." 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md">${ride.notes || ''}</textarea>
+          </div>
+          
+          <!-- Action buttons -->
+          <div class="flex gap-3">
+            <button type="button" onclick="this.closest('.fixed').remove()" 
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+              Update Ride Request
+            </button>
+          </div>
+        </form>
+      </div>
+    `
+    
+    document.body.appendChild(modal)
+    
+    // Handle form submission
+    document.getElementById('edit-ride-form').addEventListener('submit', (e) => {
+      this.handleEditRideSubmit(e, ride.id, modal)
+    })
+  }
+
+  async handleEditRideSubmit(event, rideId, modal) {
+    event.preventDefault()
+    const formData = new FormData(event.target)
+    
+    // Get coordinates (try to geocode if missing)
+    let pickupLat = formData.get('pickup_latitude')
+    let pickupLng = formData.get('pickup_longitude') 
+    let destLat = formData.get('destination_latitude')
+    let destLng = formData.get('destination_longitude')
+    
+    const pickupAddress = formData.get('pickup_address')
+    const destinationAddress = formData.get('destination_address')
+    
+    try {
+      // Geocode addresses if coordinates are missing
+      if (!pickupLat || !pickupLng) {
+        const pickupCoords = await forwardGeocode(pickupAddress)
+        pickupLat = pickupCoords.lat
+        pickupLng = pickupCoords.lng
+      }
+      
+      if (!destLat || !destLng) {
+        const destCoords = await forwardGeocode(destinationAddress)
+        destLat = destCoords.lat
+        destLng = destCoords.lng
+      }
+      
+      // Submit the updated ride request
+      await axios.put(`/api/rides/${rideId}`, {
+        pickup_latitude: pickupLat,
+        pickup_longitude: pickupLng,
+        pickup_address: pickupAddress,
+        destination_latitude: destLat,
+        destination_longitude: destLng,
+        destination_address: destinationAddress,
+        passenger_count: parseInt(formData.get('passenger_count')),
+        notes: formData.get('notes')
+      }, {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+      
+      modal.remove()
+      this.showNotification('Ride request updated successfully!', 'success')
+      this.loadDashboard() // Reload to show updated ride
+      
+    } catch (error) {
+      console.error('Failed to update ride:', error)
+      this.showNotification(
+        error.response?.data?.error || 'Failed to update ride request',
         'error'
       )
     }

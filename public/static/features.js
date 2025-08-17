@@ -468,9 +468,14 @@ async function showRequestRideModal() {
           <!-- Pickup Location -->
           <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Pickup Location</label>
-            <input type="text" name="pickup_address" required placeholder="Enter pickup address..." 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2" 
-                   onchange="geocodeAddress(this, 'pickup')" />
+            <div class="relative">
+              <input type="text" name="pickup_address" required placeholder="Enter pickup address..." 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2" 
+                     oninput="handleAddressAutocomplete(this, 'pickup')"
+                     onchange="geocodeAddress(this, 'pickup')"
+                     autocomplete="off" />
+              <div id="pickup_suggestions" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden max-h-48 overflow-y-auto"></div>
+            </div>
             <input type="hidden" name="pickup_latitude" />
             <input type="hidden" name="pickup_longitude" />
             <button type="button" onclick="getCurrentLocationAddress('pickup')" 
@@ -482,9 +487,14 @@ async function showRequestRideModal() {
           <!-- Destination -->
           <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Destination</label>
-            <input type="text" name="destination_address" required placeholder="Enter destination address..." 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
-                   onchange="geocodeAddress(this, 'destination')" />
+            <div class="relative">
+              <input type="text" name="destination_address" required placeholder="Enter destination address..." 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+                     oninput="handleAddressAutocomplete(this, 'destination')"
+                     onchange="geocodeAddress(this, 'destination')"
+                     autocomplete="off" />
+              <div id="destination_suggestions" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden max-h-48 overflow-y-auto"></div>
+            </div>
             <input type="hidden" name="destination_latitude" />
             <input type="hidden" name="destination_longitude" />
             <button type="button" onclick="getCurrentLocationAddress('destination')" 
@@ -611,6 +621,149 @@ async function reverseGeocode(lat, lng) {
   } else {
     throw new Error('Address not found')
   }
+}
+
+// Address autocomplete using Nominatim (OpenStreetMap)
+let autocompleteTimeout = null
+
+async function handleAddressAutocomplete(input, type) {
+  const query = input.value.trim()
+  const suggestionsDiv = document.getElementById(`${type}_suggestions`)
+  
+  // Clear previous timeout
+  if (autocompleteTimeout) {
+    clearTimeout(autocompleteTimeout)
+  }
+  
+  // Hide suggestions if query is too short
+  if (query.length < 3) {
+    suggestionsDiv.classList.add('hidden')
+    suggestionsDiv.innerHTML = ''
+    return
+  }
+  
+  // Debounce the API call
+  autocompleteTimeout = setTimeout(async () => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`)
+      const data = await response.json()
+      
+      if (data && data.length > 0) {
+        displayAddressSuggestions(data, type, input)
+      } else {
+        suggestionsDiv.classList.add('hidden')
+        suggestionsDiv.innerHTML = ''
+      }
+    } catch (error) {
+      console.error('Autocomplete error:', error)
+      suggestionsDiv.classList.add('hidden') 
+      suggestionsDiv.innerHTML = ''
+    }
+  }, 300) // 300ms debounce
+}
+
+function displayAddressSuggestions(suggestions, type, input) {
+  const suggestionsDiv = document.getElementById(`${type}_suggestions`)
+  
+  suggestionsDiv.innerHTML = suggestions.map(suggestion => `
+    <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0" 
+         onclick="selectAddressSuggestion('${suggestion.display_name.replace(/'/g, "\\'")}', ${suggestion.lat}, ${suggestion.lon}, '${type}', this)">
+      <div class="font-medium text-sm">${getShortAddress(suggestion)}</div>
+      <div class="text-xs text-gray-600">${suggestion.display_name}</div>
+    </div>
+  `).join('')
+  
+  suggestionsDiv.classList.remove('hidden')
+}
+
+function getShortAddress(suggestion) {
+  // Try to create a concise address from the components
+  const addr = suggestion.address || {}
+  const parts = []
+  
+  if (addr.house_number && addr.road) {
+    parts.push(`${addr.house_number} ${addr.road}`)
+  } else if (addr.road) {
+    parts.push(addr.road)
+  } else if (suggestion.name) {
+    parts.push(suggestion.name)
+  }
+  
+  if (addr.city || addr.town || addr.village) {
+    parts.push(addr.city || addr.town || addr.village)
+  }
+  
+  if (addr.state) {
+    parts.push(addr.state)
+  }
+  
+  return parts.length > 0 ? parts.join(', ') : suggestion.display_name.split(',').slice(0, 2).join(', ')
+}
+
+function selectAddressSuggestion(address, lat, lng, type, element) {
+  // Fill the input fields
+  const addressInput = document.querySelector(`input[name="${type}_address"]`)
+  const latInput = document.querySelector(`input[name="${type}_latitude"]`)
+  const lngInput = document.querySelector(`input[name="${type}_longitude"]`)
+  
+  addressInput.value = address
+  latInput.value = lat
+  lngInput.value = lng
+  
+  // Hide suggestions
+  const suggestionsDiv = document.getElementById(`${type}_suggestions`)
+  suggestionsDiv.classList.add('hidden')
+  suggestionsDiv.innerHTML = ''
+}
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function(event) {
+  const suggestionDivs = document.querySelectorAll('[id$="_suggestions"]')
+  suggestionDivs.forEach(div => {
+    if (!div.contains(event.target) && !div.previousElementSibling.contains(event.target)) {
+      div.classList.add('hidden')
+      div.innerHTML = ''
+    }
+  })
+})
+
+// Helper functions for edit modal
+async function geocodeAddressForEdit(input, type) {
+  const address = input.value.trim()
+  if (!address) return
+  
+  try {
+    const coords = await forwardGeocode(address)
+    document.querySelector(`input[name="${type}_latitude"]`).value = coords.lat
+    document.querySelector(`input[name="${type}_longitude"]`).value = coords.lng
+  } catch (error) {
+    console.error('Geocoding failed:', error)
+  }
+}
+
+async function getCurrentLocationAddressForEdit(type) {
+  if (!'geolocation' in navigator) {
+    alert('Geolocation is not supported by this browser.')
+    return
+  }
+  
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    try {
+      const lat = position.coords.latitude
+      const lng = position.coords.longitude
+      const address = await reverseGeocode(lat, lng)
+      
+      document.querySelector(`input[name="${type}_address"]`).value = address
+      document.querySelector(`input[name="${type}_latitude"]`).value = lat
+      document.querySelector(`input[name="${type}_longitude"]`).value = lng
+    } catch (error) {
+      console.error('Failed to get address for current location:', error)
+      alert('Failed to get address for your current location.')
+    }
+  }, (error) => {
+    console.error('Geolocation error:', error)
+    alert('Failed to get your current location.')
+  })
 }
 
 // Handle ride request form submission

@@ -484,6 +484,62 @@ app.post('/api/rides', authenticateUser, async (c) => {
   }
 })
 
+// Update ride request (only for 'requested' status)
+app.put('/api/rides/:id', authenticateUser, async (c) => {
+  const rideId = c.req.param('id')
+  const user = c.get('user')
+  const { env } = c
+  const { 
+    pickup_latitude, pickup_longitude, pickup_address,
+    destination_latitude, destination_longitude, destination_address,
+    passenger_count, notes 
+  } = await c.req.json()
+
+  if (!pickup_latitude || !pickup_longitude || !destination_latitude || !destination_longitude) {
+    return c.json({ error: 'Missing required fields' }, 400)
+  }
+
+  try {
+    // Verify ride exists, user is requester, and status is 'requested'
+    const ride = await env.DB.prepare(`
+      SELECT requester_id, status FROM rides WHERE id = ?
+    `).bind(rideId).first()
+
+    if (!ride) {
+      return c.json({ error: 'Ride not found' }, 404)
+    }
+
+    if (ride.requester_id !== user.user_id) {
+      return c.json({ error: 'Only the ride requester can edit this ride' }, 403)
+    }
+
+    if (ride.status !== 'requested') {
+      return c.json({ error: 'Can only edit rides that are still pending (requested status)' }, 400)
+    }
+
+    // Update the ride
+    const updatedRide = await env.DB.prepare(`
+      UPDATE rides SET 
+        pickup_latitude = ?, pickup_longitude = ?, pickup_address = ?,
+        destination_latitude = ?, destination_longitude = ?, destination_address = ?,
+        passenger_count = ?, notes = ?, updated_at = datetime('now')
+      WHERE id = ?
+      RETURNING id, group_id, requester_id, pickup_latitude, pickup_longitude,
+                pickup_address, destination_latitude, destination_longitude,
+                destination_address, passenger_count, notes, status, requested_at
+    `).bind(
+      pickup_latitude, pickup_longitude, pickup_address,
+      destination_latitude, destination_longitude, destination_address,
+      passenger_count || 1, notes, rideId
+    ).first()
+
+    return c.json({ ride: updatedRide })
+  } catch (error) {
+    console.error('Update ride error:', error)
+    return c.json({ error: 'Failed to update ride request' }, 500)
+  }
+})
+
 app.get('/api/rides', authenticateUser, async (c) => {
   const user = c.get('user')
   const { env } = c
