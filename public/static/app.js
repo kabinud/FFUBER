@@ -211,7 +211,45 @@ class FamilyRideshareApp {
       console.log('Processed data:', { groups, rides, user: this.currentUser })
 
       console.log('Rendering dashboard HTML...')
+      
+      // Simple test content first
       mainContent.innerHTML = `
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 class="text-2xl font-bold mb-4">Dashboard</h2>
+          <p class="mb-4">Welcome back, ${this.currentUser ? this.currentUser.name : 'User'}!</p>
+          
+          <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Driver Status</h3>
+              <label class="flex items-center">
+                <input type="checkbox" ${this.currentUser && this.currentUser.is_driver ? 'checked' : ''} 
+                       onchange="app.toggleDriverStatus()" class="mr-2">
+                I can drive others
+              </label>
+            </div>
+            
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Quick Actions</h3>
+              <div class="flex gap-2">
+                <button onclick="app.showCreateGroupModal()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                  Create Group
+                </button>
+                <button onclick="app.showJoinGroupModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm">
+                  Join Group
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-3">Groups: ${groups.length}</h3>
+            <h3 class="text-lg font-semibold mb-3">Rides: ${rides.length}</h3>
+          </div>
+          
+          <button onclick="app.showRequestRideModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            <i class="fas fa-car mr-2"></i>Request Ride
+          </button>
+        </div>`
       <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-2xl font-bold">Dashboard</h2>
@@ -279,41 +317,19 @@ class FamilyRideshareApp {
       `
 
       console.log('Rendering sidebar HTML...')
-      sidebar.innerHTML = `
-      <h3 class="text-lg font-semibold mb-4">Your Groups</h3>
-      <div class="space-y-3">
-        ${groups.map(group => `
-          <div class="border rounded-lg p-3 hover:bg-gray-50">
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <h4 class="font-medium">${group.name}</h4>
-                <p class="text-sm text-gray-600">${group.member_count} members</p>
-              </div>
-              ${group.is_admin ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Admin</span>' : ''}
-            </div>
-            ${group.description ? `<p class="text-sm text-gray-500 mb-2">${group.description}</p>` : ''}
-            
-            <div class="flex gap-2 mt-2">
-              <button onclick="app.viewGroup(${group.id})" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">
-                <i class="fas fa-users mr-1"></i>View Members
-              </button>
-              ${group.is_admin ? `
-                <button onclick="app.showInviteCode('${group.invite_code}', '${group.name}')" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded">
-                  <i class="fas fa-share-alt mr-1"></i>Invite Code
-                </button>
-              ` : ''}
-            </div>
-          </div>
-        `).join('')}
-      </div>
+      // Simple sidebar content
+      sidebar.innerHTML = '<h3 class="text-lg font-semibold mb-4">Your Groups (' + groups.length + ')</h3>'
       
-      ${groups.length === 0 ? `
-        <p class="text-gray-500 text-center py-4">No groups yet.</p>
-        <button onclick="app.showCreateGroupModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
-          Create First Group
-        </button>
-      ` : ''}
-      `
+      if (groups.length === 0) {
+        sidebar.innerHTML += '<p class="text-gray-500 text-center py-4">No groups yet.</p>'
+        sidebar.innerHTML += '<button onclick="app.showCreateGroupModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Create First Group</button>'
+      } else {
+        sidebar.innerHTML += '<div class="space-y-3">'
+        groups.forEach(group => {
+          sidebar.innerHTML += '<div class="border rounded-lg p-3"><h4 class="font-medium">' + group.name + '</h4><p class="text-sm text-gray-600">' + group.member_count + ' members</p></div>'
+        })
+        sidebar.innerHTML += '</div>'
+      }
       
       console.log('Dashboard rendering completed successfully')
     } catch (error) {
