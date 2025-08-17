@@ -828,6 +828,11 @@ async function handleRideRequest(event) {
     // Show success message
     showRideRequestSuccessModal(response.data.ride)
     
+    // Start timeout monitoring for this ride
+    if (window.app) {
+      window.app.startRideTimeout(response.data.ride.id, response.data.ride)
+    }
+    
     // Reload dashboard to show new ride
     if (window.app && window.app.loadDashboard) {
       window.app.loadDashboard()
