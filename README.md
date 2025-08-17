@@ -21,6 +21,8 @@
 - **Private Groups**: Create and join family/friend rideshare groups with invite codes
 - **Admin Features**: Group deletion and admin transfer capabilities
 - **Driver Management**: Toggle driver status and availability
+- **Address Autocomplete**: Real-time address suggestions with OpenStreetMap integration
+- **Ride Editing**: Edit ride requests before driver acceptance
 - **Address-Based Requests**: Request rides using real addresses with geocoding
 - **Ride Cancellation**: Cancel ride requests before pickup
 - **Smart Matching**: Find closest available drivers in your group
@@ -38,12 +40,13 @@
 6. **Location Sharing** for optimal driver matching
 
 ### 📋 Features Not Yet Implemented
-- **Real map integration** (currently uses placeholder coordinates)
+- **Interactive map view** (currently uses coordinate-based matching)
 - **Push notifications** (currently in-app notifications only)
-- **Ride history and analytics**
+- **Ride history and analytics dashboard**
 - **Payment integration**
 - **Advanced route optimization**
 - **Driver ratings and reviews**
+- **Ride scheduling** (for future rides)
 
 ## 🏗️ Data Architecture
 
@@ -80,11 +83,14 @@ ride_offers (id, ride_id, driver_id, estimated_arrival_minutes)
 ### For Ride Requesters
 1. Click "Request Ride" on dashboard
 2. Select your group and enter pickup/destination addresses
+   - **Address Autocomplete**: Start typing to see real-time suggestions
+   - **Click to Select**: Choose from dropdown to auto-populate coordinates
 3. Use "Current Location" button to auto-populate your address
 4. Add passenger count and any special notes
 5. Wait for drivers in your group to respond
-6. Accept an offer and track your ride
-7. **Cancel ride** anytime before pickup if plans change
+6. **Edit Details**: Click "Edit" to modify request before driver accepts
+7. Accept an offer and track your ride
+8. **Cancel ride** anytime before pickup if plans change
 
 ### For Drivers
 1. Toggle "I can drive others" in dashboard
@@ -161,6 +167,7 @@ npx wrangler pages domain add yourdomain.com --project-name family-rideshare
 - `POST /api/rides/:id/offer` - Offer ride
 - `POST /api/rides/:id/accept-offer/:offerId` - Accept offer
 - `PUT /api/rides/:id/status` - Update ride status (including cancellation)
+- `PUT /api/rides/:id` - Edit ride request (requester only, 'requested' status)
 - `DELETE /api/groups/:id` - Delete group (admin only)
 - `PUT /api/groups/:id/transfer-admin` - Transfer admin rights
 
