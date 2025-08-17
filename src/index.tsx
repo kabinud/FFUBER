@@ -707,6 +707,141 @@ app.post('/api/rides/:id/accept-offer/:offerId', authenticateUser, async (c) => 
   }
 })
 
+// Get available ride requests for drivers
+app.get('/api/rides/available', authenticateUser, async (c) => {
+  const user = c.get('user')
+  const { env } = c
+
+  try {
+    // Get all 'requested' rides from groups where user is a member and is a driver
+    const availableRides = await env.DB.prepare(`
+      SELECT r.*, u.name as requester_name, rg.name as group_name,
+             ROUND(
+               6371000 * acos(
+                 cos(radians(?)) * cos(radians(r.pickup_latitude)) *
+                 cos(radians(r.pickup_longitude) - radians(?)) +
+                 sin(radians(?)) * sin(radians(r.pickup_latitude))
+               )
+             ) as distance_meters
+      FROM rides r
+      JOIN users u ON r.requester_id = u.id
+      JOIN ride_groups rg ON r.group_id = rg.id
+      JOIN group_members gm ON rg.id = gm.group_id
+      LEFT JOIN users driver_user ON gm.user_id = driver_user.id
+      WHERE gm.user_id = ? 
+        AND r.requester_id != ?
+        AND r.status = 'requested'
+        AND driver_user.is_driver = 1
+        AND driver_user.is_available = 1
+      ORDER BY distance_meters ASC
+    `).bind(
+      user.last_latitude || 0, 
+      user.last_longitude || 0,
+      user.last_latitude || 0,
+      user.user_id,
+      user.user_id
+    ).all()
+
+    return c.json({ rides: availableRides.results || [] })
+  } catch (error) {
+    console.error('Get available rides error:', error)
+    return c.json({ error: 'Failed to get available rides' }, 500)
+  }
+})
+
+// Driver directly accepts a ride request
+app.post('/api/rides/:id/accept', authenticateUser, async (c) => {
+  const rideId = c.req.param('id')
+  const user = c.get('user')
+  const { env } = c
+
+  try {
+    // Verify user is a driver and available
+    const driverCheck = await env.DB.prepare(`
+      SELECT is_driver, is_available FROM users WHERE id = ?
+    `).bind(user.user_id).first()
+
+    if (!driverCheck?.is_driver) {
+      return c.json({ error: 'Only drivers can accept rides' }, 403)
+    }
+
+    if (!driverCheck?.is_available) {
+      return c.json({ error: 'You must be available to accept rides' }, 400)
+    }
+
+    // Verify ride exists, is in requested status, and user has access
+    const ride = await env.DB.prepare(`
+      SELECT r.*, gm.user_id as member_check
+      FROM rides r
+      JOIN group_members gm ON r.group_id = gm.group_id
+      WHERE r.id = ? AND gm.user_id = ? AND r.status = 'requested' AND r.requester_id != ?
+    `).bind(rideId, user.user_id, user.user_id).first()
+
+    if (!ride) {
+      return c.json({ error: 'Ride not found, already taken, or you cannot accept your own ride' }, 404)
+    }
+
+    // Accept the ride (this locks it to this driver)
+    await env.DB.prepare(`
+      UPDATE rides 
+      SET driver_id = ?, status = 'accepted', accepted_at = datetime('now')
+      WHERE id = ? AND status = 'requested'
+    `).bind(user.user_id, rideId).run()
+
+    // Verify the update was successful (in case of race condition)
+    const updatedRide = await env.DB.prepare(`
+      SELECT driver_id FROM rides WHERE id = ?
+    `).bind(rideId).first()
+
+    if (updatedRide?.driver_id !== user.user_id) {
+      return c.json({ error: 'Ride was accepted by another driver' }, 409)
+    }
+
+    return c.json({ success: true, message: 'Ride request accepted successfully' })
+  } catch (error) {
+    console.error('Accept ride error:', error)
+    return c.json({ error: 'Failed to accept ride request' }, 500)
+  }
+})
+
+// Driver cancels/de-accepts an accepted ride
+app.post('/api/rides/:id/deaccept', authenticateUser, async (c) => {
+  const rideId = c.req.param('id')
+  const user = c.get('user')
+  const { env } = c
+
+  try {
+    // Verify ride exists and user is the assigned driver
+    const ride = await env.DB.prepare(`
+      SELECT driver_id, status FROM rides WHERE id = ?
+    `).bind(rideId).first()
+
+    if (!ride) {
+      return c.json({ error: 'Ride not found' }, 404)
+    }
+
+    if (ride.driver_id !== user.user_id) {
+      return c.json({ error: 'You can only cancel rides you have accepted' }, 403)
+    }
+
+    if (ride.status !== 'accepted') {
+      return c.json({ error: 'Can only cancel accepted rides (not picked up or completed)' }, 400)
+    }
+
+    // Return ride to requested status
+    await env.DB.prepare(`
+      UPDATE rides 
+      SET driver_id = NULL, status = 'requested', accepted_at = NULL
+      WHERE id = ?
+    `).bind(rideId).run()
+
+    return c.json({ success: true, message: 'Ride acceptance cancelled - request is now available for other drivers' })
+  } catch (error) {
+    console.error('Deaccept ride error:', error)
+    return c.json({ error: 'Failed to cancel ride acceptance' }, 500)
+  }
+})
+
 // Update ride status
 app.put('/api/rides/:id/status', authenticateUser, async (c) => {
   const rideId = c.req.param('id')

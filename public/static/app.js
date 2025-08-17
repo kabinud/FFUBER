@@ -246,11 +246,19 @@ class FamilyRideshareApp {
     try {
       console.log('Loading dashboard data...')
       
-      // Load user's groups and recent rides
-      const [groupsResponse, ridesResponse] = await Promise.all([
+      // Load user's groups, recent rides, and available rides for drivers
+      const requests = [
         axios.get('/api/groups', { headers: { Authorization: `Bearer ${this.authToken}` } }),
         axios.get('/api/rides', { headers: { Authorization: `Bearer ${this.authToken}` } })
-      ])
+      ]
+      
+      // Add available rides request if user is a driver
+      if (this.currentUser && this.currentUser.is_driver) {
+        requests.push(axios.get('/api/rides/available', { headers: { Authorization: `Bearer ${this.authToken}` } }))
+      }
+      
+      const responses = await Promise.all(requests)
+      const [groupsResponse, ridesResponse, availableRidesResponse] = responses
 
       console.log('API responses received:', { 
         groups: groupsResponse.data, 
@@ -259,8 +267,9 @@ class FamilyRideshareApp {
 
       const groups = groupsResponse.data.groups || []
       const rides = ridesResponse.data.rides?.slice(0, 5) || [] // Recent 5 rides
+      const availableRides = availableRidesResponse?.data.rides || []
       
-      console.log('Processed data:', { groups, rides, user: this.currentUser })
+      console.log('Processed data:', { groups, rides, availableRides, user: this.currentUser })
       
       // Debug logging (can be removed in production)
       console.log('Current user ID:', this.currentUser?.id)
@@ -329,6 +338,11 @@ class FamilyRideshareApp {
                                 class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded mr-1">
                           <i class="fas fa-edit mr-1"></i>Edit
                          </button>` : ''}
+                      ${ride.driver_id == this.currentUser?.id && ride.status === 'accepted' ? 
+                        `<button onclick="app.deacceptRide(${ride.id})" 
+                                class="text-xs bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded mr-1">
+                          <i class="fas fa-undo mr-1"></i>Cancel Acceptance
+                         </button>` : ''}
                       ${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status) ? 
                         `<button onclick="app.cancelRide(${ride.id})" 
                                 class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
@@ -370,6 +384,56 @@ class FamilyRideshareApp {
               `).join('') : '<p class="text-gray-500 text-center py-4">No ride history yet. Request your first ride!</p>'}
             </div>
           </div>
+          
+          ${this.currentUser && this.currentUser.is_driver ? `
+            <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
+              <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-car mr-2 text-blue-600"></i>
+                Available Ride Requests (Driver View)
+              </h3>
+              <div class="space-y-3">
+                ${availableRides.length > 0 ? availableRides.map(ride => `
+                  <div class="border rounded-lg p-4 hover:bg-gray-50">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                          <i class="fas fa-user mr-2 text-gray-400"></i>
+                          <span class="font-medium">${ride.requester_name}</span>
+                          <span class="mx-2 text-gray-400">•</span>
+                          <span class="text-sm text-gray-600">${ride.group_name}</span>
+                        </div>
+                        <div class="flex items-center mb-2">
+                          <i class="fas fa-map-marker-alt mr-2 text-green-600"></i>
+                          <span class="text-sm">${ride.pickup_address || 'Pickup location'}</span>
+                        </div>
+                        <div class="flex items-center mb-2">
+                          <i class="fas fa-flag-checkered mr-2 text-red-600"></i>
+                          <span class="text-sm">${ride.destination_address || 'Destination'}</span>
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500 space-x-4">
+                          <span><i class="fas fa-users mr-1"></i>${ride.passenger_count} passenger(s)</span>
+                          <span><i class="fas fa-clock mr-1"></i>${this.formatRideDate(ride.requested_at)}</span>
+                          ${ride.distance_meters ? `<span><i class="fas fa-route mr-1"></i>${Math.round(ride.distance_meters/1000*10)/10} km away</span>` : ''}
+                        </div>
+                        ${ride.notes ? `<div class="mt-2 text-sm text-gray-600 italic">${ride.notes}</div>` : ''}
+                      </div>
+                      <button onclick="app.acceptRideRequest(${ride.id})" 
+                              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-check mr-1"></i>Accept
+                      </button>
+                    </div>
+                  </div>
+                `).join('') : `
+                  <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-car text-4xl mb-2 opacity-50"></i>
+                    <p>No ride requests available at the moment.</p>
+                    <p class="text-sm">Make sure you're marked as available to see requests.</p>
+                  </div>
+                `}
+              </div>
+            </div>
+          ` : ''}
+
         </div>
       `
 
@@ -730,7 +794,47 @@ class FamilyRideshareApp {
     }
   }
 
+  async acceptRideRequest(rideId) {
+    if (!confirm('Are you sure you want to accept this ride request? This will assign you as the driver.')) {
+      return
+    }
 
+    try {
+      await axios.post(`/api/rides/${rideId}/accept`, {}, {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+
+      this.showNotification('Ride request accepted! You are now the assigned driver.', 'success')
+      this.loadDashboard() // Reload to update both rider and driver views
+    } catch (error) {
+      console.error('Failed to accept ride:', error)
+      this.showNotification(
+        error.response?.data?.error || 'Failed to accept ride request', 
+        'error'
+      )
+    }
+  }
+
+  async deacceptRide(rideId) {
+    if (!confirm('Are you sure you want to cancel your acceptance? This will make the ride available for other drivers again.')) {
+      return
+    }
+
+    try {
+      await axios.post(`/api/rides/${rideId}/deaccept`, {}, {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+
+      this.showNotification('Ride acceptance cancelled. Request is now available for other drivers.', 'success')
+      this.loadDashboard() // Reload dashboard
+    } catch (error) {
+      console.error('Failed to cancel ride acceptance:', error)
+      this.showNotification(
+        error.response?.data?.error || 'Failed to cancel ride acceptance', 
+        'error'
+      )
+    }
+  }
 
   // Notification system
   showNotification(message, type = 'info') {
