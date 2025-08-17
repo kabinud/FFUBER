@@ -871,4 +871,7 @@ class FamilyRideshareApp {
 let app
 document.addEventListener('DOMContentLoaded', () => {
   app = new FamilyRideshareApp()
+  // Make app globally available
+  window.app = app
+  console.log('App instance created and made globally available')
 })
