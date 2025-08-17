@@ -262,31 +262,13 @@ class FamilyRideshareApp {
       
       console.log('Processed data:', { groups, rides, user: this.currentUser })
       
-      // Debug: Log user ID and ride requester IDs
+      // Debug logging (can be removed in production)
       console.log('Current user ID:', this.currentUser?.id)
-      console.log('Current user object:', this.currentUser)
-      rides.forEach(ride => {
-        console.log(`Ride ${ride.id}: requester_id=${ride.requester_id}, status=${ride.status}`)
-        console.log(`  - can_edit=${ride.requester_id == this.currentUser?.id && ride.status === 'requested'}`)
-        console.log(`  - can_cancel=${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status)}`)
-        console.log(`  - requester_id type: ${typeof ride.requester_id}, user_id type: ${typeof this.currentUser?.id}`)
-      })
+      console.log('Loaded rides:', rides.length)
 
       console.log('Rendering dashboard HTML...')
       
-      // Add debug section at the top
-      const debugInfo = `
-        <div class="bg-yellow-100 border border-yellow-400 rounded p-3 mb-4">
-          <h4 class="font-bold text-sm">Debug Info:</h4>
-          <p class="text-xs">Current User ID: ${this.currentUser?.id} (${typeof this.currentUser?.id})</p>
-          <p class="text-xs">Total Rides: ${rides.length}</p>
-          ${rides.map(ride => `
-            <p class="text-xs">Ride ${ride.id}: requester=${ride.requester_id} (${typeof ride.requester_id}), status=${ride.status}, is_mine=${ride.requester_id == this.currentUser?.id}</p>
-          `).join('')}
-        </div>
-      `
-      
-      mainContent.innerHTML = debugInfo + `
+      mainContent.innerHTML = `
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-bold">Dashboard</h2>
