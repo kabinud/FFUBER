@@ -32,23 +32,13 @@ async function handleLoginSubmit(event) {
       landingPage.classList.add('hidden')
       appContent.classList.remove('hidden')
       
-      // Set up navigation for logged-in user
-      const navButtons = document.getElementById('nav-buttons')
-      if (navButtons && response.data.user) {
-        navButtons.innerHTML = `
-          <span class="mr-4 text-white">Welcome, ${response.data.user.name}</span>
-          <button onclick="localStorage.removeItem('authToken'); location.reload()" class="bg-red-500 hover:bg-red-700 px-4 py-2 rounded">
-            Logout
-          </button>
-        `
-      }
       
       // Load full dashboard using app instance if available, otherwise use simplified version
       if (window.app) {
         // Set app properties and use full functionality
         window.app.authToken = response.data.token
         window.app.currentUser = response.data.user
-        window.app.loadDashboard()
+        window.app.showApp()
       } else {
         // Simplified dashboard as fallback
         loadSimpleDashboard(response.data.user)
@@ -149,7 +139,7 @@ async function handleRegisterSubmit(event) {
       if (window.app) {
         window.app.authToken = response.data.token
         window.app.currentUser = response.data.user
-        window.app.loadDashboard()
+        window.app.showApp()
       } else {
         loadSimpleDashboard(response.data.user)
       }
