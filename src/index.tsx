@@ -522,7 +522,7 @@ app.put('/api/rides/:id', authenticateUser, async (c) => {
       UPDATE rides SET 
         pickup_latitude = ?, pickup_longitude = ?, pickup_address = ?,
         destination_latitude = ?, destination_longitude = ?, destination_address = ?,
-        passenger_count = ?, notes = ?, updated_at = datetime('now')
+        passenger_count = ?, notes = ?
       WHERE id = ?
       RETURNING id, group_id, requester_id, pickup_latitude, pickup_longitude,
                 pickup_address, destination_latitude, destination_longitude,

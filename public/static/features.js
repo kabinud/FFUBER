@@ -611,6 +611,9 @@ async function forwardGeocode(address) {
   }
 }
 
+// Make forwardGeocode globally accessible
+window.forwardGeocode = forwardGeocode
+
 // Simple reverse geocoding using Nominatim (OpenStreetMap)
 async function reverseGeocode(lat, lng) {
   const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
