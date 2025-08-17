@@ -32,6 +32,7 @@ app.use(jsxRenderer(({ children }) => {
       </head>
       <body class="bg-gray-50 font-sans">
         {children}
+        <script src="/static/auth.js"></script>
         <script src="/static/app.js"></script>
       </body>
     </html>
@@ -607,10 +608,10 @@ app.get('/', (c) => {
             Family Rideshare
           </h1>
           <div id="nav-buttons">
-            <button id="login-btn" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded mr-2">
+            <button id="login-btn" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded mr-2" onclick="alert('Login clicked'); document.getElementById('login-modal').classList.remove('hidden')">
               Login
             </button>
-            <button id="register-btn" class="bg-green-500 hover:bg-green-700 px-4 py-2 rounded">
+            <button id="register-btn" class="bg-green-500 hover:bg-green-700 px-4 py-2 rounded" onclick="alert('Register clicked'); document.getElementById('register-modal').classList.remove('hidden')">
               Sign Up
             </button>
           </div>
@@ -648,7 +649,7 @@ app.get('/', (c) => {
               </div>
             </div>
 
-            <button id="get-started-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-semibold">
+            <button id="get-started-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-semibold" onclick="alert('Get Started clicked'); document.getElementById('register-modal').classList.remove('hidden')">
               Get Started
             </button>
           </div>
@@ -675,7 +676,7 @@ app.get('/', (c) => {
       <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
           <h3 class="text-2xl font-bold mb-6">Login</h3>
-          <form id="login-form">
+          <form id="login-form" onsubmit="return handleLoginSubmit(event)">
             <div class="mb-4">
               <label class="block text-sm font-medium mb-2">Email</label>
               <input type="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -684,7 +685,7 @@ app.get('/', (c) => {
               <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md">
                 Login
               </button>
-              <button type="button" id="cancel-login" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md">
+              <button type="button" id="cancel-login" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md" onclick="document.getElementById('login-modal').classList.add('hidden')">
                 Cancel
               </button>
             </div>
@@ -696,7 +697,7 @@ app.get('/', (c) => {
       <div id="register-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
           <h3 class="text-2xl font-bold mb-6">Sign Up</h3>
-          <form id="register-form">
+          <form id="register-form" onsubmit="return handleRegisterSubmit(event)">
             <div class="mb-4">
               <label class="block text-sm font-medium mb-2">Email</label>
               <input type="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -713,7 +714,7 @@ app.get('/', (c) => {
               <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md">
                 Sign Up
               </button>
-              <button type="button" id="cancel-register" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md">
+              <button type="button" id="cancel-register" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md" onclick="document.getElementById('register-modal').classList.add('hidden')">
                 Cancel
               </button>
             </div>
