@@ -30,7 +30,9 @@
 - **Ride Cancellation**: Cancel ride requests before pickup
 - **Smart Matching**: Find closest available drivers in your group
 - **Real-time Location**: Location tracking for better matching
-- **Ride Organization**: Separate current rides from history with requester info
+- **Navigation Menu**: Clean navigation between Dashboard and Ride History pages
+- **Ride History Page**: Dedicated page for browsing completed and cancelled rides  
+- **Duplicate Requests**: One-click recreation of previous ride requests
 - **Ride Status Tracking**: Track ride progress from request to completion
 - **Responsive UI**: Mobile-friendly interface with TailwindCSS
 
@@ -94,6 +96,8 @@ ride_offers (id, ride_id, driver_id, estimated_arrival_minutes)
 6. **Edit Details**: Click "Edit" to modify request before driver accepts
 7. Accept an offer and track your ride
 8. **Cancel ride** anytime before pickup if plans change
+9. **Browse History**: Use "Ride History" menu to view past rides
+10. **Request Again**: Click "Request Again" on any historical ride to duplicate it
 
 ### For Drivers
 1. Toggle "I can drive others" in dashboard
@@ -174,8 +178,10 @@ npx wrangler pages domain add yourdomain.com --project-name family-rideshare
 - `PUT /api/rides/:id/status` - Update ride status (including cancellation)
 - `PUT /api/rides/:id` - Edit ride request (requester only, 'requested' status)
 - `GET /api/rides/available` - Get available ride requests for drivers
+- `GET /api/rides/history` - Get historical rides (completed/cancelled) with pagination
 - `POST /api/rides/:id/accept` - Accept ride request (driver only)
 - `POST /api/rides/:id/deaccept` - Cancel ride acceptance (driver only)
+- `POST /api/rides/:id/duplicate` - Create new request from historical ride
 - `DELETE /api/groups/:id` - Delete group (admin only)
 - `PUT /api/groups/:id/transfer-admin` - Transfer admin rights
 
