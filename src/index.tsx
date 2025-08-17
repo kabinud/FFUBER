@@ -1009,14 +1009,11 @@ app.get('/', (c) => {
             FamRide
           </h1>
           <div id="nav-buttons">
-            <button id="login-btn" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded mr-2" onclick="alert('Login clicked'); document.getElementById('login-modal').classList.remove('hidden')">
+            <button id="login-btn" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded mr-2">
               Login
             </button>
-            <button id="register-btn" class="bg-green-500 hover:bg-green-700 px-4 py-2 rounded mr-2" onclick="alert('Register clicked'); document.getElementById('register-modal').classList.remove('hidden')">
+            <button id="register-btn" class="bg-green-500 hover:bg-green-700 px-4 py-2 rounded mr-2">
               Sign Up
-            </button>
-            <button onclick="testShowDashboard()" class="bg-yellow-500 hover:bg-yellow-700 px-4 py-2 rounded text-sm">
-              Test Dashboard
             </button>
           </div>
         </div>
@@ -1053,7 +1050,7 @@ app.get('/', (c) => {
               </div>
             </div>
 
-            <button id="get-started-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-semibold" onclick="alert('Get Started clicked'); document.getElementById('register-modal').classList.remove('hidden')">
+            <button id="get-started-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-semibold">
               Get Started
             </button>
           </div>

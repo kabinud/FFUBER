@@ -86,13 +86,13 @@ class FamRideApp {
 
   // Authentication
   showLoginModal() {
-    console.log('showLoginModal called')
+    // Removed debug log('showLoginModal called')
     const modal = document.getElementById('login-modal')
-    console.log('Login modal element:', modal)
+    // Removed debug log('Login modal element:', modal)
     if (modal) {
       modal.classList.remove('hidden')
     } else {
-      console.error('Login modal not found!')
+      logger?.error('Login modal not found!')
     }
   }
 
@@ -102,13 +102,13 @@ class FamRideApp {
   }
 
   showRegisterModal() {
-    console.log('showRegisterModal called')
+    // Removed debug log('showRegisterModal called')
     const modal = document.getElementById('register-modal')
-    console.log('Register modal element:', modal)
+    // Removed debug log('Register modal element:', modal)
     if (modal) {
       modal.classList.remove('hidden')
     } else {
-      console.error('Register modal not found!')
+      logger?.error('Register modal not found!')
     }
   }
 
@@ -151,7 +151,7 @@ class FamRideApp {
       
       this.hideRegisterModal()
       this.showApp()
-      this.showNotification('Welcome to Family Rideshare!', 'success')
+      this.showNotification('Welcome to FamRide!', 'success')
     } catch (error) {
       this.showNotification(error.response?.data?.error || 'Registration failed', 'error')
     }
@@ -159,15 +159,15 @@ class FamRideApp {
 
   async loadUserProfile() {
     try {
-      console.log('Making profile API call...')
+      // Removed debug log('Making profile API call...')
       const response = await axios.get('/api/user/profile', {
         headers: { Authorization: `Bearer ${this.authToken}` }
       })
-      console.log('Profile loaded:', response.data.user)
+      // Removed debug log('Profile loaded:', response.data.user)
       this.currentUser = response.data.user
       this.showApp()
     } catch (error) {
-      console.error('Profile loading failed:', error)
+      logger?.error('Profile loading failed:', error)
       localStorage.removeItem('authToken')
       this.authToken = null
       this.showNotification('Session expired. Please log in again.', 'error')
@@ -190,28 +190,28 @@ class FamRideApp {
 
   // UI Management
   showApp() {
-    console.log('showApp() called')
-    console.log('Current user:', this.currentUser)
-    console.log('Auth token:', this.authToken ? 'Present' : 'Missing')
+    // Removed debug log('showApp() called')
+    // Removed debug log('Current user:', this.currentUser)
+    // Removed debug log('Auth token:', this.authToken ? 'Present' : 'Missing')
     
     const landingPage = document.getElementById('landing-page')
     const appContent = document.getElementById('app-content')
     
-    console.log('Landing page element:', landingPage)
-    console.log('App content element:', appContent)
+    // Removed debug log('Landing page element:', landingPage)
+    // Removed debug log('App content element:', appContent)
     
     if (landingPage && appContent) {
       landingPage.classList.add('hidden')
       appContent.classList.remove('hidden')
-      console.log('Page sections toggled successfully')
+      // Removed debug log('Page sections toggled successfully')
       
       this.updateNavigation()
-      console.log('Navigation updated')
+      // Removed debug log('Navigation updated')
       
       this.showDashboard()
-      console.log('Dashboard loading initiated')
+      // Removed debug log('Dashboard loading initiated')
     } else {
-      console.error('Required DOM elements not found!')
+      logger?.error('Required DOM elements not found!')
     }
   }
 
@@ -246,14 +246,14 @@ class FamRideApp {
   }
 
   async loadDashboard() {
-    console.log('loadDashboard called')
+    // Removed debug log('loadDashboard called')
     const mainContent = document.getElementById('main-content')
     const sidebar = document.getElementById('sidebar-content')
     
-    console.log('DOM elements found:', { mainContent: !!mainContent, sidebar: !!sidebar })
+    // Removed debug log('DOM elements found:', { mainContent: !!mainContent, sidebar: !!sidebar })
 
     try {
-      console.log('Loading dashboard data...')
+      // Removed debug log('Loading dashboard data...')
       
       // Load user's groups, recent rides, and available rides for drivers
       const requests = [
@@ -269,25 +269,21 @@ class FamRideApp {
       const responses = await Promise.all(requests)
       const [groupsResponse, ridesResponse, availableRidesResponse] = responses
 
-      console.log('API responses received:', { 
-        groups: groupsResponse.data, 
-        rides: ridesResponse.data 
-      })
 
       const groups = groupsResponse.data.groups || []
       const rides = ridesResponse.data.rides || [] // All current rides
       const availableRides = availableRidesResponse?.data.rides || []
       
-      console.log('Processed data:', { groups, rides, availableRides, user: this.currentUser })
+      // Removed debug log('Processed data:', { groups, rides, availableRides, user: this.currentUser })
       
       // Debug logging (can be removed in production)
-      console.log('Current user ID:', this.currentUser?.id)
-      console.log('Loaded rides:', rides.length)
+      // Removed debug log('Current user ID:', this.currentUser?.id)
+      // Removed debug log('Loaded rides:', rides.length)
       
       // Start timeout monitoring for any existing requested rides
       this.monitorExistingRides(rides)
 
-      console.log('Rendering dashboard HTML...')
+      // Removed debug log('Rendering dashboard HTML...')
       
       mainContent.innerHTML = `
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -449,7 +445,7 @@ class FamRideApp {
         </div>
       `
 
-      console.log('Rendering sidebar HTML...')
+      // Removed debug log('Rendering sidebar HTML...')
       
       sidebar.innerHTML = `
         <h3 class="text-lg font-semibold mb-4">Your Groups</h3>
@@ -487,9 +483,9 @@ class FamRideApp {
         ` : ''}
       `
       
-      console.log('Dashboard rendering completed successfully')
+      // Removed debug log('Dashboard rendering completed successfully')
     } catch (error) {
-      console.error('Dashboard loading error:', error)
+      logger?.error('Dashboard loading error:', error)
       
       // If authentication failed, logout and reload
       if (error.response?.status === 401) {
@@ -593,7 +589,7 @@ class FamRideApp {
         'success'
       )
     } catch (error) {
-      console.error('Failed to toggle availability:', error)
+      logger?.error('Failed to toggle availability:', error)
       this.showNotification('Failed to update driver availability', 'error')
     }
   }
@@ -614,7 +610,7 @@ class FamRideApp {
       this.clearRideTimeout(rideId) // Clear any timeout for this ride
       this.loadDashboard() // Reload dashboard to update ride list
     } catch (error) {
-      console.error('Failed to cancel ride:', error)
+      logger?.error('Failed to cancel ride:', error)
       this.showNotification(
         error.response?.data?.error || 'Failed to cancel ride request', 
         'error'
@@ -649,7 +645,7 @@ class FamRideApp {
       // Create edit modal
       this.showEditRideModal(ride, groups)
     } catch (error) {
-      console.error('Failed to load ride for editing:', error)
+      logger?.error('Failed to load ride for editing:', error)
       this.showNotification('Failed to load ride data', 'error')
     }
   }
@@ -794,7 +790,7 @@ class FamRideApp {
       this.loadDashboard() // Reload to show updated ride
       
     } catch (error) {
-      console.error('Failed to update ride:', error)
+      logger?.error('Failed to update ride:', error)
       this.showNotification(
         error.response?.data?.error || 'Failed to update ride request',
         'error'
@@ -816,7 +812,7 @@ class FamRideApp {
       this.clearRideTimeout(rideId) // Clear timeout since ride is now accepted
       this.loadDashboard() // Reload to update both rider and driver views
     } catch (error) {
-      console.error('Failed to accept ride:', error)
+      logger?.error('Failed to accept ride:', error)
       this.showNotification(
         error.response?.data?.error || 'Failed to accept ride request', 
         'error'
@@ -837,7 +833,7 @@ class FamRideApp {
       this.showNotification('Ride acceptance cancelled. Request is now available for other drivers.', 'success')
       this.loadDashboard() // Reload dashboard
     } catch (error) {
-      console.error('Failed to cancel ride acceptance:', error)
+      logger?.error('Failed to cancel ride acceptance:', error)
       this.showNotification(
         error.response?.data?.error || 'Failed to cancel ride acceptance', 
         'error'
@@ -846,7 +842,7 @@ class FamRideApp {
   }
 
   async loadRideHistory() {
-    console.log('Loading ride history...')
+    // Removed debug log('Loading ride history...')
     const mainContent = document.getElementById('main-content')
     const sidebar = document.getElementById('sidebar-content')
     
@@ -859,7 +855,7 @@ class FamRideApp {
       const historyData = response.data
       const rides = historyData.rides || []
       
-      console.log('Ride history loaded:', rides.length, 'rides')
+      // Removed debug log('Ride history loaded:', rides.length, 'rides')
       
       mainContent.innerHTML = `
         <div class="bg-white rounded-lg shadow-lg p-6">
@@ -940,7 +936,7 @@ class FamRideApp {
       `
       
     } catch (error) {
-      console.error('Failed to load ride history:', error)
+      logger?.error('Failed to load ride history:', error)
       mainContent.innerHTML = `
         <div class="bg-white rounded-lg shadow-lg p-6 text-center">
           <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
@@ -968,7 +964,7 @@ class FamRideApp {
       // Optionally switch to dashboard to see the new request
       this.showDashboard()
     } catch (error) {
-      console.error('Failed to duplicate ride:', error)
+      logger?.error('Failed to duplicate ride:', error)
       this.showNotification(
         error.response?.data?.error || 'Failed to create duplicate ride request', 
         'error'

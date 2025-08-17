@@ -50,7 +50,7 @@ async function loadGroupsSidebar() {
       ` : ''}
     `
   } catch (error) {
-    console.error('Failed to load groups:', error)
+    logger?.error('Failed to load groups:', error)
     sidebar.innerHTML = `
       <h3 class="text-lg font-semibold mb-4">Your Groups</h3>
       <p class="text-gray-500 text-center py-4">Failed to load groups.</p>
@@ -540,7 +540,7 @@ async function showRequestRideModal() {
     document.body.appendChild(modal)
     
   } catch (error) {
-    console.error('Failed to load groups:', error)
+    logger?.error('Failed to load groups:', error)
     alert('Failed to load groups. Please try again.')
   }
 }
@@ -567,7 +567,7 @@ function getCurrentLocationAddress(type) {
         const addressField = document.querySelector(`[name="${type}_address"]`)
         addressField.value = address
       } catch (error) {
-        console.error('Reverse geocoding failed:', error)
+        logger?.error('Reverse geocoding failed:', error)
         // Fallback to coordinates
         const addressField = document.querySelector(`[name="${type}_address"]`)
         addressField.value = `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
@@ -590,7 +590,7 @@ async function geocodeAddress(inputElement, type) {
     document.querySelector(`[name="${type}_latitude"]`).value = coords.lat
     document.querySelector(`[name="${type}_longitude"]`).value = coords.lng
   } catch (error) {
-    console.error('Geocoding failed:', error)
+    logger?.error('Geocoding failed:', error)
     // Don't show error to user for every keystroke, just log it
   }
 }
@@ -658,7 +658,7 @@ async function handleAddressAutocomplete(input, type) {
         suggestionsDiv.innerHTML = ''
       }
     } catch (error) {
-      console.error('Autocomplete error:', error)
+      logger?.error('Autocomplete error:', error)
       suggestionsDiv.classList.add('hidden') 
       suggestionsDiv.innerHTML = ''
     }
@@ -740,7 +740,7 @@ async function geocodeAddressForEdit(input, type) {
     document.querySelector(`input[name="${type}_latitude"]`).value = coords.lat
     document.querySelector(`input[name="${type}_longitude"]`).value = coords.lng
   } catch (error) {
-    console.error('Geocoding failed:', error)
+    logger?.error('Geocoding failed:', error)
   }
 }
 
@@ -760,11 +760,11 @@ async function getCurrentLocationAddressForEdit(type) {
       document.querySelector(`input[name="${type}_latitude"]`).value = lat
       document.querySelector(`input[name="${type}_longitude"]`).value = lng
     } catch (error) {
-      console.error('Failed to get address for current location:', error)
+      logger?.error('Failed to get address for current location:', error)
       alert('Failed to get address for your current location.')
     }
   }, (error) => {
-    console.error('Geolocation error:', error)
+    logger?.error('Geolocation error:', error)
     alert('Failed to get your current location.')
   })
 }
@@ -839,7 +839,7 @@ async function handleRideRequest(event) {
     }
     
   } catch (error) {
-    console.error('Ride request error:', error)
+    logger?.error('Ride request error:', error)
     alert('Failed to create ride request: ' + (error.response?.data?.error || 'Unknown error'))
   }
   return false
@@ -941,4 +941,4 @@ async function viewRideStatus(rideId) {
   }
 }
 
-console.log('Features.js loaded successfully')
+// Features.js module loaded

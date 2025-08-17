@@ -4,25 +4,25 @@ async function handleLoginSubmit(event) {
   const formData = new FormData(event.target)
   const email = formData.get('email')
   
-  console.log('Login attempt for:', email)
+  // Removed debug log('Login attempt for:', email)
   
   try {
     const response = await axios.post('/api/auth/login', { email })
-    console.log('Login API response:', response.data)
+    // Removed debug log('Login API response:', response.data)
     
     // Store token and user data
     localStorage.setItem('authToken', response.data.token)
-    console.log('Token stored in localStorage')
+    // Removed debug log('Token stored in localStorage')
     
     // Close modal
     document.getElementById('login-modal').classList.add('hidden')
     document.getElementById('login-form').reset()
     
     // Check if app instance exists
-    console.log('App instance available:', !!window.app)
+    // Removed debug log('App instance available:', !!window.app)
     
     // Since test function works, let's use the same approach
-    console.log('Attempting to show dashboard...')
+    // Removed debug log('Attempting to show dashboard...')
     
     // Hide landing page, show app content
     const landingPage = document.getElementById('landing-page')
@@ -54,9 +54,9 @@ async function handleLoginSubmit(event) {
         loadSimpleDashboard(response.data.user)
       }
       
-      console.log('Dashboard shown successfully using direct DOM approach')
+      // Removed debug log('Dashboard shown successfully using direct DOM approach')
     } else {
-      console.error('Required DOM elements not found')
+      logger?.error('Required DOM elements not found')
       alert('Error: Could not find page elements')
     }
 
@@ -102,8 +102,8 @@ function loadSimpleDashboard(user) {
   loadGroupsSidebar()
 }
   } catch (error) {
-    console.error('Login error:', error)
-    console.error('Error response:', error.response?.data)
+    logger?.error('Login error:', error)
+    logger?.error('Error response:', error.response?.data)
     alert('Login failed: ' + (error.response?.data?.error || 'Unknown error'))
   }
   return false
@@ -154,7 +154,7 @@ async function handleRegisterSubmit(event) {
         loadSimpleDashboard(response.data.user)
       }
       
-      console.log('Registration successful - dashboard shown')
+      // Removed debug log('Registration successful - dashboard shown')
     }
   } catch (error) {
     alert('Registration failed: ' + (error.response?.data?.error || 'Unknown error'))
@@ -163,4 +163,4 @@ async function handleRegisterSubmit(event) {
 }
 
 // Test function to verify script is loading
-console.log('Auth.js loaded successfully')
+// Auth.js module loaded
