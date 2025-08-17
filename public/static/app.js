@@ -302,14 +302,33 @@ class FamilyRideshareApp {
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-bold">Dashboard</h2>
-            <button onclick="showRequestRideModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-              <i class="fas fa-car mr-2"></i>Request Ride
-            </button>
+            <div class="flex items-center gap-3">
+              ${this.currentUser && this.currentUser.is_driver ? `
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium">Driver Status:</span>
+                  <button onclick="app.toggleDriverAvailability()" 
+                          class="px-4 py-2 rounded-lg font-medium transition-all ${this.currentUser.is_available ? 
+                            'bg-green-600 hover:bg-green-700 text-white' : 
+                            'bg-gray-300 hover:bg-gray-400 text-gray-700'}">
+                    <i class="fas ${this.currentUser.is_available ? 'fa-car' : 'fa-car-slash'} mr-2"></i>
+                    ${this.currentUser.is_available ? 'Available' : 'Unavailable'}
+                  </button>
+                </div>
+              ` : ''}
+              ${this.currentUser && this.currentUser.is_driver && this.currentUser.is_available ? 
+                `<span class="bg-orange-100 text-orange-800 px-3 py-2 rounded-lg text-sm font-medium">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  You're available as a driver - ride requests disabled
+                 </span>` :
+                `<button onclick="showRequestRideModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+                  <i class="fas fa-car mr-2"></i>Request Ride
+                 </button>`}
+            </div>
           </div>
           
           <div class="grid md:grid-cols-2 gap-6 mb-6">
             <div>
-              <h3 class="text-lg font-semibold mb-3">Driver Status</h3>
+              <h3 class="text-lg font-semibold mb-3">Profile Settings</h3>
               <div class="flex items-center gap-4">
                 <label class="flex items-center">
                   <input type="checkbox" ${this.currentUser && this.currentUser.is_driver ? 'checked' : ''} 
@@ -317,11 +336,10 @@ class FamilyRideshareApp {
                   I can drive others
                 </label>
                 ${this.currentUser && this.currentUser.is_driver ? `
-                  <label class="flex items-center">
-                    <input type="checkbox" ${this.currentUser.is_available ? 'checked' : ''} 
-                           onchange="app.toggleAvailability()" class="mr-2">
-                    Available now
-                  </label>
+                  <span class="text-sm text-gray-600">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Use the availability toggle above to start/stop receiving requests
+                  </span>
                 ` : ''}
               </div>
             </div>
@@ -592,6 +610,35 @@ class FamilyRideshareApp {
     // This will be handled by location updates
     this.currentUser.is_available = event.target.checked
     this.updateLocationOnServer()
+  }
+
+  async toggleDriverAvailability() {
+    const newAvailability = !this.currentUser.is_available
+    
+    try {
+      // Update availability on server
+      await axios.post('/api/user/location', {
+        latitude: this.currentLocation?.latitude || 0,
+        longitude: this.currentLocation?.longitude || 0,
+        is_available: newAvailability
+      }, {
+        headers: { Authorization: `Bearer ${this.authToken}` }
+      })
+
+      // Update local state
+      this.currentUser.is_available = newAvailability
+      
+      // Refresh dashboard to update UI
+      this.loadDashboard()
+      
+      this.showNotification(
+        `Driver availability ${newAvailability ? 'enabled' : 'disabled'}. ${newAvailability ? 'You can now receive ride requests!' : 'You will not receive new ride requests.'}`, 
+        'success'
+      )
+    } catch (error) {
+      console.error('Failed to toggle availability:', error)
+      this.showNotification('Failed to update driver availability', 'error')
+    }
   }
 
   async cancelRide(rideId) {
@@ -921,9 +968,15 @@ class FamilyRideshareApp {
           <button onclick="app.showDashboard()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">
             <i class="fas fa-home mr-2"></i>Back to Dashboard
           </button>
-          <button onclick="showRequestRideModal()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-            <i class="fas fa-plus mr-2"></i>Request New Ride
-          </button>
+          ${this.currentUser && this.currentUser.is_driver && this.currentUser.is_available ? 
+            `<div class="bg-orange-100 text-orange-800 px-3 py-2 rounded text-sm text-center">
+              <i class="fas fa-info-circle mr-1"></i>
+              You're available as a driver<br>
+              Ride requests are disabled
+             </div>` :
+            `<button onclick="showRequestRideModal()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+              <i class="fas fa-plus mr-2"></i>Request New Ride
+             </button>`}
         </div>
       `
       
