@@ -22,6 +22,9 @@
 - **Admin Features**: Group deletion and admin transfer capabilities
 - **Driver Management**: Toggle driver status and availability
 - **Address Autocomplete**: Real-time address suggestions with OpenStreetMap integration
+- **Driver Dashboard**: Comprehensive view of available ride requests with full details
+- **Direct Acceptance**: Streamlined one-click ride acceptance with exclusive locking
+- **Driver Control**: Accept or cancel acceptance of rides with full visibility
 - **Ride Editing**: Edit ride requests before driver acceptance
 - **Address-Based Requests**: Request rides using real addresses with geocoding
 - **Ride Cancellation**: Cancel ride requests before pickup
@@ -95,9 +98,11 @@ ride_offers (id, ride_id, driver_id, estimated_arrival_minutes)
 ### For Drivers
 1. Toggle "I can drive others" in dashboard
 2. Set availability status when ready to drive
-3. Receive notifications for ride requests in your groups
-4. Offer rides with estimated arrival time
-5. Update ride status (picked up, completed)
+3. **View Available Requests**: See all ride requests in your groups with full details
+4. **Review Request Details**: Check pickup/destination, passenger count, distance, and notes
+5. **Accept Requests**: Click "Accept" to immediately claim a ride (exclusive lock)
+6. **Cancel Acceptance**: Use "Cancel Acceptance" if you need to back out
+7. **Update Ride Status**: Mark rides as picked up or completed
 
 ### Group Management
 - **Create Group**: Generate unique 8-character invite code
@@ -168,6 +173,9 @@ npx wrangler pages domain add yourdomain.com --project-name family-rideshare
 - `POST /api/rides/:id/accept-offer/:offerId` - Accept offer
 - `PUT /api/rides/:id/status` - Update ride status (including cancellation)
 - `PUT /api/rides/:id` - Edit ride request (requester only, 'requested' status)
+- `GET /api/rides/available` - Get available ride requests for drivers
+- `POST /api/rides/:id/accept` - Accept ride request (driver only)
+- `POST /api/rides/:id/deaccept` - Cancel ride acceptance (driver only)
 - `DELETE /api/groups/:id` - Delete group (admin only)
 - `PUT /api/groups/:id/transfer-admin` - Transfer admin rights
 
