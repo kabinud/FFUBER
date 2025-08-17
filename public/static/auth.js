@@ -43,53 +43,15 @@ async function handleLoginSubmit(event) {
         `
       }
       
-      // Set up basic dashboard content
-      const mainContent = document.getElementById('main-content')
-      if (mainContent) {
-        mainContent.innerHTML = `
-          <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 class="text-2xl font-bold mb-4">Dashboard</h2>
-            <p class="mb-4">Welcome back, ${response.data.user.name}!</p>
-            
-            <div class="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 class="text-lg font-semibold mb-3">Quick Actions</h3>
-                <div class="flex gap-2">
-                  <button onclick="alert('Create Group - Feature coming soon!')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
-                    Create Group
-                  </button>
-                  <button onclick="alert('Join Group - Feature coming soon!')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm">
-                    Join Group
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <h3 class="text-lg font-semibold mb-3">Driver Status</h3>
-                <label class="flex items-center">
-                  <input type="checkbox" class="mr-2">
-                  I can drive others
-                </label>
-              </div>
-            </div>
-            
-            <button onclick="alert('Request Ride - Feature coming soon!')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-              <i class="fas fa-car mr-2"></i>Request Ride
-            </button>
-          </div>
-        `
-      }
-      
-      // Set up sidebar
-      const sidebar = document.getElementById('sidebar-content')
-      if (sidebar) {
-        sidebar.innerHTML = `
-          <h3 class="text-lg font-semibold mb-4">Your Groups</h3>
-          <p class="text-gray-500 text-center py-4">No groups yet.</p>
-          <button onclick="alert('Create your first group!')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
-            Create First Group
-          </button>
-        `
+      // Load full dashboard using app instance if available, otherwise use simplified version
+      if (window.app) {
+        // Set app properties and use full functionality
+        window.app.authToken = response.data.token
+        window.app.currentUser = response.data.user
+        window.app.loadDashboard()
+      } else {
+        // Simplified dashboard as fallback
+        loadSimpleDashboard(response.data.user)
       }
       
       console.log('Dashboard shown successfully using direct DOM approach')
@@ -97,6 +59,48 @@ async function handleLoginSubmit(event) {
       console.error('Required DOM elements not found')
       alert('Error: Could not find page elements')
     }
+
+// Simplified dashboard function as fallback
+function loadSimpleDashboard(user) {
+  const mainContent = document.getElementById('main-content')
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-2xl font-bold mb-4">Dashboard</h2>
+        <p class="mb-4">Welcome back, ${user.name}!</p>
+        
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h3 class="text-lg font-semibold mb-3">Quick Actions</h3>
+            <div class="flex gap-2">
+              <button onclick="showCreateGroupModal()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                Create Group
+              </button>
+              <button onclick="showJoinGroupModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm">
+                Join Group
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <h3 class="text-lg font-semibold mb-3">Driver Status</h3>
+            <label class="flex items-center">
+              <input type="checkbox" ${user.is_driver ? 'checked' : ''} onchange="toggleDriverStatus()" class="mr-2">
+              I can drive others
+            </label>
+          </div>
+        </div>
+        
+        <button onclick="showRequestRideModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+          <i class="fas fa-car mr-2"></i>Request Ride
+        </button>
+      </div>
+    `
+  }
+  
+  // Load groups for sidebar
+  loadGroupsSidebar()
+}
   } catch (error) {
     console.error('Login error:', error)
     console.error('Error response:', error.response?.data)
@@ -122,7 +126,7 @@ async function handleRegisterSubmit(event) {
     document.getElementById('register-modal').classList.add('hidden')
     document.getElementById('register-form').reset()
     
-    // Use the same direct DOM approach that works for login
+    // Use the same approach as login
     const landingPage = document.getElementById('landing-page')
     const appContent = document.getElementById('app-content')
     
@@ -141,48 +145,13 @@ async function handleRegisterSubmit(event) {
         `
       }
       
-      // Set up dashboard (same as login)
-      const mainContent = document.getElementById('main-content')
-      if (mainContent) {
-        mainContent.innerHTML = `
-          <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 class="text-2xl font-bold mb-4">Welcome to Family Rideshare!</h2>
-            <p class="mb-4">Thanks for joining, ${response.data.user.name}! Get started by creating or joining a family group.</p>
-            
-            <div class="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 class="text-lg font-semibold mb-3">Quick Actions</h3>
-                <div class="flex gap-2">
-                  <button onclick="alert('Create Group - Feature coming soon!')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
-                    Create Group
-                  </button>
-                  <button onclick="alert('Join Group - Feature coming soon!')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm">
-                    Join Group
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <h3 class="text-lg font-semibold mb-3">Driver Status</h3>
-                <label class="flex items-center">
-                  <input type="checkbox" class="mr-2">
-                  I can drive others
-                </label>
-              </div>
-            </div>
-          </div>
-        `
-      }
-      
-      const sidebar = document.getElementById('sidebar-content')
-      if (sidebar) {
-        sidebar.innerHTML = `
-          <h3 class="text-lg font-semibold mb-4">Getting Started</h3>
-          <p class="text-sm text-gray-600 mb-4">Welcome! Create your first family group to start sharing rides with people you trust.</p>
-          <button onclick="alert('Create your first group!')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
-            Create First Group
-          </button>
-        `
+      // Load full dashboard using app instance if available
+      if (window.app) {
+        window.app.authToken = response.data.token
+        window.app.currentUser = response.data.user
+        window.app.loadDashboard()
+      } else {
+        loadSimpleDashboard(response.data.user)
       }
       
       console.log('Registration successful - dashboard shown')

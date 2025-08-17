@@ -33,6 +33,7 @@ app.use(jsxRenderer(({ children }) => {
       <body class="bg-gray-50 font-sans">
         {children}
         <script src="/static/test.js"></script>
+        <script src="/static/features.js"></script>
         <script src="/static/auth.js"></script>
         <script src="/static/app.js"></script>
       </body>
