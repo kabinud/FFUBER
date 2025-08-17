@@ -6,22 +6,18 @@ class FamilyRideshareApp {
     this.currentLocation = null
     this.watchId = null
     this.currentView = 'dashboard'
-    this.rideTimeouts = new Map() // Track ride request timeouts
+    this.timeoutManager = null // Will be initialized after DOM loads
     this.init()
   }
 
   init() {
-    console.log('App initializing...')
+    logger?.info('App initializing')
     
     // Check for existing session
     this.authToken = localStorage.getItem('authToken')
-    console.log('Found token:', this.authToken ? 'Yes' : 'No')
     
     if (this.authToken) {
-      console.log('Loading user profile...')
       this.loadUserProfile()
-    } else {
-      console.log('No token found, showing landing page')
     }
 
     this.setupEventListeners()
@@ -29,27 +25,14 @@ class FamilyRideshareApp {
   }
 
   setupEventListeners() {
-    console.log('Setting up event listeners...')
-    
     // Navigation buttons
     const loginBtn = document.getElementById('login-btn')
     const registerBtn = document.getElementById('register-btn')
     const getStartedBtn = document.getElementById('get-started-btn')
     
-    console.log('Found elements:', { loginBtn, registerBtn, getStartedBtn })
-    
-    loginBtn?.addEventListener('click', () => {
-      console.log('Login button clicked')
-      this.showLoginModal()
-    })
-    registerBtn?.addEventListener('click', () => {
-      console.log('Register button clicked')
-      this.showRegisterModal()
-    })
-    getStartedBtn?.addEventListener('click', () => {
-      console.log('Get started button clicked')
-      this.showRegisterModal()
-    })
+    loginBtn?.addEventListener('click', () => this.showLoginModal())
+    registerBtn?.addEventListener('click', () => this.showRegisterModal())
+    getStartedBtn?.addEventListener('click', () => this.showRegisterModal())
 
     // Modal handlers
     document.getElementById('cancel-login')?.addEventListener('click', () => this.hideLoginModal())
@@ -78,7 +61,7 @@ class FamilyRideshareApp {
           this.updateLocationOnServer()
         },
         (error) => {
-          console.log('Location tracking error:', error)
+          logger?.warn('Location tracking error', error.message)
         },
         { enableHighAccuracy: true, maximumAge: 300000, timeout: 5000 }
       )
@@ -97,7 +80,7 @@ class FamilyRideshareApp {
         headers: { Authorization: `Bearer ${this.authToken}` }
       })
     } catch (error) {
-      console.log('Failed to update location:', error)
+      logger?.error('Failed to update location', error)
     }
   }
 
@@ -540,59 +523,25 @@ class FamilyRideshareApp {
     }
   }
 
+  // Use utility functions from RideUtils class
   getRideStatusColor(status) {
-    const colors = {
-      'requested': 'border-yellow-400',
-      'accepted': 'border-blue-400',
-      'picked_up': 'border-purple-400',
-      'completed': 'border-green-400',
-      'cancelled': 'border-red-400'
-    }
-    return colors[status] || 'border-gray-400'
+    return RideUtils.getRideStatusColor(status)
   }
 
   getRideStatusBadge(status) {
-    const badges = {
-      'requested': 'bg-yellow-100 text-yellow-800',
-      'accepted': 'bg-blue-100 text-blue-800',
-      'picked_up': 'bg-purple-100 text-purple-800',
-      'completed': 'bg-green-100 text-green-800',
-      'cancelled': 'bg-red-100 text-red-800'
-    }
-    return badges[status] || 'bg-gray-100 text-gray-800'
+    return RideUtils.getRideStatusBadge(status)
   }
 
   formatRideDate(dateString) {
-    try {
-      const date = new Date(dateString)
-      const now = new Date()
-      const diffInMinutes = Math.floor((now - date) / (1000 * 60))
-      
-      if (diffInMinutes < 1) return 'Just now'
-      if (diffInMinutes < 60) return `${diffInMinutes}m ago`
-      
-      const diffInHours = Math.floor(diffInMinutes / 60)
-      if (diffInHours < 24) return `${diffInHours}h ago`
-      
-      const diffInDays = Math.floor(diffInHours / 24)
-      if (diffInDays < 7) return `${diffInDays}d ago`
-      
-      // For older dates, show the actual date
-      return date.toLocaleDateString()
-    } catch (error) {
-      // Fallback to simple date formatting
-      return new Date(dateString).toLocaleString()
-    }
+    return RideUtils.formatRideDate(dateString)
   }
 
   getCurrentRides(rides) {
-    // Current rides: requested, accepted, picked_up
-    return rides.filter(ride => ['requested', 'accepted', 'picked_up'].includes(ride.status))
+    return RideUtils.getCurrentRides(rides)
   }
 
   getHistoricalRides(rides) {
-    // Historical rides: completed, cancelled
-    return rides.filter(ride => ['completed', 'cancelled'].includes(ride.status))
+    return RideUtils.getHistoricalRides(rides)
   }
 
   async toggleDriverStatus() {
@@ -1027,176 +976,22 @@ class FamilyRideshareApp {
     }
   }
 
-  // Ride timeout monitoring system
+  // Delegate timeout methods to TimeoutManager
   startRideTimeout(rideId, rideData) {
-    console.log('Starting timeout monitor for ride:', rideId)
-    
-    // Clear any existing timeout for this ride
-    this.clearRideTimeout(rideId)
-    
-    // Set timeout for 5 minutes (300 seconds)
-    const timeoutId = setTimeout(() => {
-      this.handleRideTimeout(rideId, rideData)
-    }, 300000) // 5 minutes in milliseconds
-    
-    this.rideTimeouts.set(rideId, {
-      timeoutId,
-      rideData,
-      startTime: Date.now()
-    })
+    this.timeoutManager?.startRideTimeout(rideId, rideData)
   }
 
   clearRideTimeout(rideId) {
-    const timeoutData = this.rideTimeouts.get(rideId)
-    if (timeoutData) {
-      clearTimeout(timeoutData.timeoutId)
-      this.rideTimeouts.delete(rideId)
-      console.log('Cleared timeout for ride:', rideId)
-    }
+    this.timeoutManager?.clearRideTimeout(rideId)
   }
 
-  async handleRideTimeout(rideId, rideData) {
-    console.log('Ride timeout triggered for:', rideId)
-    
-    try {
-      // Check if ride is still in requested status
-      const response = await axios.get('/api/rides', {
-        headers: { Authorization: `Bearer ${this.authToken}` }
-      })
-      
-      const currentRide = response.data.rides.find(r => r.id === rideId)
-      
-      // Only show timeout if ride is still in requested status
-      if (currentRide && currentRide.status === 'requested') {
-        this.showRideTimeoutModal(rideId, rideData)
-      } else {
-        // Ride was accepted or cancelled, clean up timeout
-        this.clearRideTimeout(rideId)
-      }
-    } catch (error) {
-      console.error('Error checking ride status:', error)
-      // Still show timeout modal in case of error
-      this.showRideTimeoutModal(rideId, rideData)
-    }
-  }
-
-  showRideTimeoutModal(rideId, rideData) {
-    const modal = document.createElement('div')
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
-    modal.innerHTML = `
-      <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-        <div class="text-center">
-          <i class="fas fa-clock text-4xl text-orange-500 mb-4"></i>
-          <h3 class="text-xl font-bold mb-4">No Response Yet</h3>
-          <p class="text-gray-600 mb-6">
-            It's been 5 minutes since you requested a ride. No family or friends are available right now.
-          </p>
-          
-          <div class="space-y-3">
-            <button onclick="app.launchUber('${rideData.pickup_address}', '${rideData.destination_address}', ${rideData.pickup_latitude}, ${rideData.pickup_longitude}, ${rideData.destination_latitude}, ${rideData.destination_longitude})"
-                    class="w-full bg-black text-white px-4 py-3 rounded-lg font-medium hover:bg-gray-800">
-              <i class="fas fa-car mr-2"></i>Try Uber Instead
-            </button>
-            
-            <button onclick="app.keepWaitingForRide(${rideId}); this.closest('.fixed').remove()"
-                    class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700">
-              <i class="fas fa-clock mr-2"></i>Keep Waiting (5 more minutes)
-            </button>
-            
-            <button onclick="app.cancelRide(${rideId}); this.closest('.fixed').remove()"
-                    class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-red-700">
-              <i class="fas fa-times mr-2"></i>Cancel Request
-            </button>
-            
-            <button onclick="this.closest('.fixed').remove()"
-                    class="w-full border border-gray-300 px-4 py-3 rounded-lg font-medium hover:bg-gray-50">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    `
-    
-    document.body.appendChild(modal)
-  }
-
-  launchUber(pickupAddress, destinationAddress, pickupLat, pickupLng, destLat, destLng) {
-    // Generate Uber deep link
-    const uberUrl = this.generateUberUrl(pickupAddress, destinationAddress, pickupLat, pickupLng, destLat, destLng)
-    
-    // Try to open Uber app, fallback to web
-    window.open(uberUrl, '_blank')
-    
-    this.showNotification('Opening Uber app...', 'info')
-  }
-
-  generateUberUrl(pickupAddress, destinationAddress, pickupLat, pickupLng, destLat, destLng) {
-    // Uber deep link format
-    // uber://m/request?pickup[latitude]=37.775&pickup[longitude]=-122.417&destination[latitude]=37.791&destination[longitude]=-122.405
-    
-    const baseUrl = 'https://m.uber.com/ul/'
-    const params = new URLSearchParams({
-      'action': 'setPickup',
-      'pickup[latitude]': pickupLat,
-      'pickup[longitude]': pickupLng,
-      'pickup[nickname]': pickupAddress || 'Pickup Location',
-      'dropoff[latitude]': destLat,
-      'dropoff[longitude]': destLng,
-      'dropoff[nickname]': destinationAddress || 'Destination'
-    })
-    
-    return baseUrl + '?' + params.toString()
-  }
-
-  keepWaitingForRide(rideId) {
-    // Restart the timeout for another 5 minutes
-    const timeoutData = this.rideTimeouts.get(rideId)
-    if (timeoutData) {
-      this.startRideTimeout(rideId, timeoutData.rideData)
-    }
-    
-    this.showNotification('We\'ll check again in 5 minutes if no one accepts your ride.', 'info')
-  }
-
-  // Monitor existing rides when dashboard loads
+  // Delegate timeout methods to TimeoutManager
   monitorExistingRides(rides) {
-    const userRequestedRides = rides.filter(ride => 
-      ride.requester_id == this.currentUser?.id && ride.status === 'requested'
-    )
-    
-    userRequestedRides.forEach(ride => {
-      // Only start timeout if not already monitoring this ride
-      if (!this.rideTimeouts.has(ride.id)) {
-        // Calculate remaining time (if ride was requested less than 5 minutes ago)
-        const rideAge = Date.now() - new Date(ride.requested_at).getTime()
-        const remainingTime = Math.max(0, 300000 - rideAge) // 5 minutes - age
-        
-        if (remainingTime > 0) {
-          console.log(`Starting timeout for existing ride ${ride.id} with ${Math.round(remainingTime/1000)}s remaining`)
-          
-          const timeoutId = setTimeout(() => {
-            this.handleRideTimeout(ride.id, ride)
-          }, remainingTime)
-          
-          this.rideTimeouts.set(ride.id, {
-            timeoutId,
-            rideData: ride,
-            startTime: new Date(ride.requested_at).getTime()
-          })
-        } else {
-          // Ride is already older than 5 minutes, trigger timeout immediately
-          console.log(`Ride ${ride.id} is already past timeout, triggering now`)
-          setTimeout(() => this.handleRideTimeout(ride.id, ride), 1000)
-        }
-      }
-    })
+    this.timeoutManager?.monitorExistingRides(rides, this.currentUser)
   }
 
-  // Clear timeouts when rides are accepted or cancelled
   onRideStatusChanged(rideId, newStatus) {
-    if (['accepted', 'cancelled', 'completed'].includes(newStatus)) {
-      this.clearRideTimeout(rideId)
-    }
+    this.timeoutManager?.onRideStatusChanged(rideId, newStatus)
   }
 
   // Notification system
@@ -1221,7 +1016,13 @@ class FamilyRideshareApp {
 let app
 document.addEventListener('DOMContentLoaded', () => {
   app = new FamilyRideshareApp()
-  // Make app globally available
+  
+  // Initialize timeout manager
+  app.timeoutManager = new TimeoutManager(app)
+  
+  // Make app and timeout manager globally available
   window.app = app
-  console.log('App instance created and made globally available')
+  window.timeoutManager = app.timeoutManager
+  
+  logger?.info('App instance created and made globally available')
 })

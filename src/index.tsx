@@ -1127,11 +1127,12 @@ app.get('/', (c) => {
       </div>
     </div>
     
-    <script src="/static/test.js"></script>
+    <script src="/static/logger.js"></script>
+    <script src="/static/ride-utils.js"></script>
+    <script src="/static/timeout-manager.js"></script>
     <script src="/static/features.js"></script>
     <script src="/static/auth.js"></script>
     <script src="/static/app.js"></script>
-    <script src="/static/debug.js"></script>
     </body>
     </html>
   `)
