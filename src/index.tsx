@@ -713,9 +713,9 @@ app.get('/api/rides/available', authenticateUser, async (c) => {
   const { env } = c
 
   try {
-    // Get all 'requested' rides from groups where user is a member and is a driver
+    // Get available rides (requested) and accepted rides by this driver
     const availableRides = await env.DB.prepare(`
-      SELECT r.*, u.name as requester_name, rg.name as group_name,
+      SELECT r.*, u.name as requester_name, u2.name as driver_name, rg.name as group_name,
              ROUND(
                6371000 * acos(
                  cos(radians(?)) * cos(radians(r.pickup_latitude)) *
@@ -725,19 +725,26 @@ app.get('/api/rides/available', authenticateUser, async (c) => {
              ) as distance_meters
       FROM rides r
       JOIN users u ON r.requester_id = u.id
+      LEFT JOIN users u2 ON r.driver_id = u2.id
       JOIN ride_groups rg ON r.group_id = rg.id
       JOIN group_members gm ON rg.id = gm.group_id
       LEFT JOIN users driver_user ON gm.user_id = driver_user.id
       WHERE gm.user_id = ? 
         AND r.requester_id != ?
-        AND r.status = 'requested'
-        AND driver_user.is_driver = 1
-        AND driver_user.is_available = 1
-      ORDER BY distance_meters ASC
+        AND (
+          (r.status = 'requested' AND driver_user.is_driver = 1 AND driver_user.is_available = 1)
+          OR 
+          (r.status = 'accepted' AND r.driver_id = ?)
+        )
+      ORDER BY 
+        CASE WHEN r.driver_id = ? THEN 0 ELSE 1 END,
+        distance_meters ASC
     `).bind(
       user.last_latitude || 0, 
       user.last_longitude || 0,
       user.last_latitude || 0,
+      user.user_id,
+      user.user_id,
       user.user_id,
       user.user_id
     ).all()

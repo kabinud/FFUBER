@@ -318,47 +318,44 @@ class FamilyRideshareApp {
             </div>
           </div>
 
-          <div class="mb-6">
-            <h3 class="text-lg font-semibold mb-3">Current Rides</h3>
-            <div class="space-y-2">
-              ${this.getCurrentRides(rides).length > 0 ? this.getCurrentRides(rides).map(ride => `
-                <div class="border-l-4 ${this.getRideStatusColor(ride.status)} pl-4 py-2">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <span class="font-medium">${ride.pickup_address || 'Pickup location'}</span>
-                      <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
-                      <span>${ride.destination_address || 'Destination'}</span>
+          ${!this.currentUser?.is_driver ? `
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold mb-3">Current Rides</h3>
+              <div class="space-y-2">
+                ${this.getCurrentRides(rides).length > 0 ? this.getCurrentRides(rides).map(ride => `
+                  <div class="border-l-4 ${this.getRideStatusColor(ride.status)} pl-4 py-2">
+                    <div class="flex justify-between items-center">
+                      <div>
+                        <span class="font-medium">${ride.pickup_address || 'Pickup location'}</span>
+                        <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
+                        <span>${ride.destination_address || 'Destination'}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm px-2 py-1 rounded ${this.getRideStatusBadge(ride.status)}">
+                          ${ride.status.replace('_', ' ')}
+                        </span>
+                        ${ride.requester_id == this.currentUser?.id && ride.status === 'requested' ? 
+                          `<button onclick="app.editRide(${ride.id})" 
+                                  class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded mr-1">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                           </button>` : ''}
+                        ${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status) ? 
+                          `<button onclick="app.cancelRide(${ride.id})" 
+                                  class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
+                            <i class="fas fa-times mr-1"></i>Cancel
+                           </button>` : ''}
+                      </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                      <span class="text-sm px-2 py-1 rounded ${this.getRideStatusBadge(ride.status)}">
-                        ${ride.status.replace('_', ' ')}
-                      </span>
-                      ${ride.requester_id == this.currentUser?.id && ride.status === 'requested' ? 
-                        `<button onclick="app.editRide(${ride.id})" 
-                                class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded mr-1">
-                          <i class="fas fa-edit mr-1"></i>Edit
-                         </button>` : ''}
-                      ${ride.driver_id == this.currentUser?.id && ride.status === 'accepted' ? 
-                        `<button onclick="app.deacceptRide(${ride.id})" 
-                                class="text-xs bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded mr-1">
-                          <i class="fas fa-undo mr-1"></i>Cancel Acceptance
-                         </button>` : ''}
-                      ${ride.requester_id == this.currentUser?.id && ['requested', 'accepted'].includes(ride.status) ? 
-                        `<button onclick="app.cancelRide(${ride.id})" 
-                                class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
-                          <i class="fas fa-times mr-1"></i>Cancel
-                         </button>` : ''}
+                    <div class="text-sm text-gray-600 mt-1">
+                      ${ride.group_name} • ${this.formatRideDate(ride.requested_at)}
+                      ${ride.requester_name && ride.requester_name !== this.currentUser?.name ? ` • Requested by: ${ride.requester_name}` : ''}
+                      ${ride.driver_name ? ` • Driver: ${ride.driver_name}` : ''}
                     </div>
                   </div>
-                  <div class="text-sm text-gray-600 mt-1">
-                    ${ride.group_name} • ${this.formatRideDate(ride.requested_at)}
-                    ${ride.requester_name && ride.requester_name !== this.currentUser?.name ? ` • Requested by: ${ride.requester_name}` : ''}
-                    ${ride.driver_name ? ` • Driver: ${ride.driver_name}` : ''}
-                  </div>
-                </div>
-              `).join('') : '<p class="text-gray-500 text-center py-4">No current rides.</p>'}
+                `).join('') : '<p class="text-gray-500 text-center py-4">No current rides.</p>'}
+              </div>
             </div>
-          </div>
+          ` : ''}
           
           <div class="mb-6">
             <h3 class="text-lg font-semibold mb-3">Ride History</h3>
@@ -417,10 +414,19 @@ class FamilyRideshareApp {
                         </div>
                         ${ride.notes ? `<div class="mt-2 text-sm text-gray-600 italic">${ride.notes}</div>` : ''}
                       </div>
-                      <button onclick="app.acceptRideRequest(${ride.id})" 
-                              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                        <i class="fas fa-check mr-1"></i>Accept
-                      </button>
+                      ${ride.status === 'requested' ? 
+                        `<button onclick="app.acceptRideRequest(${ride.id})" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                          <i class="fas fa-check mr-1"></i>Accept
+                         </button>` : 
+                      ride.status === 'accepted' && ride.driver_id == this.currentUser?.id ?
+                        `<button onclick="app.deacceptRide(${ride.id})" 
+                                class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+                          <i class="fas fa-undo mr-1"></i>Cancel Acceptance
+                         </button>` : 
+                        `<span class="text-sm px-3 py-2 bg-gray-100 text-gray-600 rounded-md">
+                          ${ride.status === 'accepted' ? 'Accepted by ' + (ride.driver_name || 'another driver') : ride.status}
+                         </span>`}
                     </div>
                   </div>
                 `).join('') : `
