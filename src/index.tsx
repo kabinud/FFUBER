@@ -804,12 +804,12 @@ app.get('/api/rides/available', authenticateUser, async (c) => {
     const availableRides = await env.DB.prepare(`
       SELECT r.*, u.name as requester_name, u2.name as driver_name, rg.name as group_name,
              ROUND(
-               6371000 * acos(
+               3959 * acos(
                  cos(radians(?)) * cos(radians(r.pickup_latitude)) *
                  cos(radians(r.pickup_longitude) - radians(?)) +
                  sin(radians(?)) * sin(radians(r.pickup_latitude))
-               )
-             ) as distance_meters
+               ) * 10
+             ) / 10 as distance_miles
       FROM rides r
       JOIN users u ON r.requester_id = u.id
       LEFT JOIN users u2 ON r.driver_id = u2.id
@@ -825,7 +825,7 @@ app.get('/api/rides/available', authenticateUser, async (c) => {
         )
       ORDER BY 
         CASE WHEN r.driver_id = ? THEN 0 ELSE 1 END,
-        distance_meters ASC
+        distance_miles ASC
     `).bind(
       user.last_latitude || 0, 
       user.last_longitude || 0,

@@ -407,7 +407,7 @@ class FamilyRideshareApp {
                         <div class="flex items-center text-xs text-gray-500 space-x-4">
                           <span><i class="fas fa-users mr-1"></i>${ride.passenger_count} passenger(s)</span>
                           <span><i class="fas fa-clock mr-1"></i>${this.formatRideDate(ride.requested_at)}</span>
-                          ${ride.distance_meters ? `<span><i class="fas fa-route mr-1"></i>${Math.round(ride.distance_meters/1000*10)/10} km away</span>` : ''}
+                          ${ride.distance_miles ? `<span><i class="fas fa-route mr-1"></i>${ride.distance_miles} mi away</span>` : ''}
                         </div>
                         ${ride.notes ? `<div class="mt-2 text-sm text-gray-600 italic">${ride.notes}</div>` : ''}
                       </div>
